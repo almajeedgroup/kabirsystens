@@ -697,6 +697,57 @@ input[type='file'] {
   border-bottom-color: var(--azure);
 }
 
+/* ================= Status figures (traffic light) ================= */
+.fig {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fig-good {
+  color: #157347;
+}
+
+.fig-caution {
+  color: #9a6a00;
+}
+
+.fig-warn {
+  color: #c02626;
+}
+
+.status-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.74rem;
+  color: var(--ink-50);
+}
+
+.status-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-good {
+  background: #157347;
+}
+
+.dot-caution {
+  background: #9a6a00;
+}
+
+.dot-warn {
+  background: #c02626;
+}
+
 /* ================= Notices ================= */
 .notice {
   border: var(--hairline);

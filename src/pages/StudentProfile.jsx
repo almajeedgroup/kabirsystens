@@ -4,6 +4,7 @@ import {
   paidTotal, dueAmount, feeDeficit,
 } from '../store.js';
 import { formatINR, PAYMENT_STAGES, PAYMENT_MODES } from '../constants.js';
+import { collectionStatus, dueStatus, figClass } from '../utils/status.js';
 import Avatar from '../components/Avatar.jsx';
 import StudentForm from '../components/StudentForm.jsx';
 import BarChart from '../components/BarChart.jsx';
@@ -51,11 +52,11 @@ export default function StudentProfile({ view, navigate }) {
   ];
 
   const summary = [
-    ['Actual Amount', actual],
-    ['Agreed Amount', agreed],
-    ['Deficit', deficit],
-    ['Grand Total Paid', paid],
-    ['Due Amount', due],
+    ['Actual Amount', actual, ''],
+    ['Agreed Amount', agreed, ''],
+    ['Deficit', deficit, ''],
+    ['Grand Total Paid', paid, collectionStatus(paid, agreed)],
+    ['Due Amount', due, dueStatus(paid, agreed)],
   ];
 
   return (
@@ -87,11 +88,11 @@ export default function StudentProfile({ view, navigate }) {
       </div>
 
       <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-        {summary.map(([k, v]) => (
+        {summary.map(([k, v, status]) => (
           <div className="stat-card" key={k}>
             <div>
               <div className="label">{k}</div>
-              <div className="value" style={{ fontSize: '1.15rem' }}>₹ {formatINR(v)}</div>
+              <div className={`value ${figClass(status)}`} style={{ fontSize: '1.15rem' }}>₹ {formatINR(v)}</div>
             </div>
           </div>
         ))}
@@ -149,9 +150,9 @@ export default function StudentProfile({ view, navigate }) {
                 })}
                 <tr className="total-row">
                   <td>GRAND TOTAL</td>
-                  <td className="num">₹ {formatINR(paid)}</td>
+                  <td className={`num ${figClass(collectionStatus(paid, agreed))}`}>₹ {formatINR(paid)}</td>
                   <td colSpan={2}>Due Amount</td>
-                  <td className="num" style={{ textAlign: 'right' }}>₹ {formatINR(due)}</td>
+                  <td className={`num ${figClass(dueStatus(paid, agreed))}`} style={{ textAlign: 'right' }}>₹ {formatINR(due)}</td>
                 </tr>
               </tbody>
             </table>

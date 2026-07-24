@@ -1,5 +1,6 @@
 import { getData, expensesAnnualTotal, getBalanceSheet } from '../store.js';
 import { formatINR, MONTHS, monthLabel } from '../constants.js';
+import { collectionStatus, figClass } from '../utils/status.js';
 import BarChart from '../components/BarChart.jsx';
 import Avatar from '../components/Avatar.jsx';
 import {
@@ -24,11 +25,11 @@ export default function Dashboard({ year, navigate }) {
   const recentStudents = [...yearStudents].slice(-5).reverse();
 
   const stats = [
-    { icon: StudentsIcon, label: `Students · ${year}`, value: yearStudents.length, hint: `${yearStudents.filter((s) => s.className === 'I PUC').length} I PUC · ${yearStudents.filter((s) => s.className === 'II PUC').length} II PUC`, tone: '' },
-    { icon: TeachersIcon, label: 'Teachers & Staff', value: staff.length, hint: 'Across the college', tone: '' },
-    { icon: RupeeIcon, label: 'Fees Received', value: `₹ ${formatINR(totalReceived)}`, hint: `of ₹ ${formatINR(totalActual)} assigned`, tone: 'gold' },
-    { icon: WalletIcon, label: 'Total Expenses', value: `₹ ${formatINR(totalExpenses)}`, hint: `Academic year ${year}`, tone: 'gold' },
-    { icon: ScaleIcon, label: 'Annual Fee Deficit', value: `₹ ${formatINR(annualDeficit)}`, hint: 'Assigned − received', tone: 'deep' },
+    { icon: StudentsIcon, label: `Students · ${year}`, value: yearStudents.length, hint: `${yearStudents.filter((s) => s.className === 'I PUC').length} I PUC · ${yearStudents.filter((s) => s.className === 'II PUC').length} II PUC`, tone: '', status: '' },
+    { icon: TeachersIcon, label: 'Teachers & Staff', value: staff.length, hint: 'Across the college', tone: '', status: '' },
+    { icon: RupeeIcon, label: 'Fees Received', value: `₹ ${formatINR(totalReceived)}`, hint: `of ₹ ${formatINR(totalActual)} assigned`, tone: 'gold', status: collectionStatus(totalReceived, totalActual) },
+    { icon: WalletIcon, label: 'Total Expenses', value: `₹ ${formatINR(totalExpenses)}`, hint: `Academic year ${year}`, tone: 'gold', status: '' },
+    { icon: ScaleIcon, label: 'Annual Fee Deficit', value: `₹ ${formatINR(annualDeficit)}`, hint: 'Assigned − received', tone: 'deep', status: collectionStatus(totalReceived, totalActual) },
   ];
 
   return (
@@ -41,12 +42,12 @@ export default function Dashboard({ year, navigate }) {
       </div>
 
       <div className="stat-grid">
-        {stats.map(({ icon: StatIcon, label, value, hint, tone }) => (
+        {stats.map(({ icon: StatIcon, label, value, hint, tone, status }) => (
           <div className="stat-card" key={label}>
             <span className={`stat-icon ${tone}`}><StatIcon /></span>
             <div>
               <div className="label">{label}</div>
-              <div className="value">{value}</div>
+              <div className={`value ${figClass(status)}`}>{value}</div>
               <div className="hint">{hint}</div>
             </div>
           </div>

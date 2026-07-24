@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getData, expensesAnnualTotal, getBalanceSheet, paidTotal, dueAmount } from '../store.js';
 import { formatINR, MONTHS, monthLabel } from '../constants.js';
+import { collectionStatus, dueStatus, signStatus, figClass } from '../utils/status.js';
 import BarChart from '../components/BarChart.jsx';
 import Expenses from './Expenses.jsx';
 import BalanceSheet from './BalanceSheet.jsx';
@@ -35,22 +36,22 @@ function Overview({ year, setTab }) {
   const sheetReceived = Number(sheet.iPucReceived) + Number(sheet.iiPucReceived);
 
   const tiles = [
-    { icon: RupeeIcon, label: `Fees Collected · ${year}`, value: `₹ ${formatINR(collected)}`, hint: `of ₹ ${formatINR(agreed)} agreed`, tone: '' },
-    { icon: ScaleIcon, label: 'Fees Due', value: `₹ ${formatINR(due)}`, hint: `${yearStudents.filter((s) => dueAmount(s) > 0).length} students pending`, tone: '' },
-    { icon: WalletIcon, label: `Expenses · ${year}`, value: `₹ ${formatINR(totalExpenses)}`, hint: 'All categories', tone: 'gold' },
-    { icon: TeachersIcon, label: 'Monthly Salary Outgo', value: `₹ ${formatINR(salaryOutgo)}`, hint: `${staff.length} teachers & staff`, tone: 'gold' },
-    { icon: ScaleIcon, label: 'Net Position', value: `₹ ${formatINR(net)}`, hint: 'Collected − expenses', tone: 'deep' },
+    { icon: RupeeIcon, label: `Fees Collected · ${year}`, value: `₹ ${formatINR(collected)}`, hint: `of ₹ ${formatINR(agreed)} agreed`, tone: '', status: collectionStatus(collected, agreed) },
+    { icon: ScaleIcon, label: 'Fees Due', value: `₹ ${formatINR(due)}`, hint: `${yearStudents.filter((s) => dueAmount(s) > 0).length} students pending`, tone: '', status: dueStatus(collected, agreed) },
+    { icon: WalletIcon, label: `Expenses · ${year}`, value: `₹ ${formatINR(totalExpenses)}`, hint: 'All categories', tone: 'gold', status: '' },
+    { icon: TeachersIcon, label: 'Monthly Salary Outgo', value: `₹ ${formatINR(salaryOutgo)}`, hint: `${staff.length} teachers & staff`, tone: 'gold', status: '' },
+    { icon: ScaleIcon, label: 'Net Position', value: `₹ ${formatINR(net)}`, hint: 'Collected − expenses', tone: 'deep', status: signStatus(net) },
   ];
 
   return (
     <>
       <div className="stat-grid">
-        {tiles.map(({ icon: TileIcon, label, value, hint, tone }) => (
+        {tiles.map(({ icon: TileIcon, label, value, hint, tone, status }) => (
           <div className="stat-card" key={label}>
             <span className={`stat-icon ${tone}`}><TileIcon /></span>
             <div>
               <div className="label">{label}</div>
-              <div className="value" style={{ fontSize: '1.25rem' }}>{value}</div>
+              <div className={`value ${figClass(status)}`} style={{ fontSize: '1.25rem' }}>{value}</div>
               <div className="hint">{hint}</div>
             </div>
           </div>
@@ -124,7 +125,7 @@ function Overview({ year, setTab }) {
                 </tr>
                 <tr className="total-row">
                   <td>DEFICIT ANNUAL</td>
-                  <td className="num">₹ {formatINR(sheetActual - sheetReceived)}</td>
+                  <td className={`num ${figClass(collectionStatus(sheetReceived, sheetActual))}`}>₹ {formatINR(sheetActual - sheetReceived)}</td>
                 </tr>
               </tbody>
             </table>

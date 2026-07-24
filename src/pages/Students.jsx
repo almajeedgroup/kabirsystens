@@ -3,6 +3,8 @@ import { getData, deleteStudent, paidTotal, dueAmount } from '../store.js';
 import { CLASSES, formatINR } from '../constants.js';
 import Avatar from '../components/Avatar.jsx';
 import StudentForm from '../components/StudentForm.jsx';
+import StatusLegend from '../components/StatusLegend.jsx';
+import { dueStatus, collectionStatus, figClass } from '../utils/status.js';
 import { PlusIcon, SearchIcon, EditIcon, TrashIcon, StudentsIcon } from '../components/Icons.jsx';
 
 export default function Students({ year, navigate }) {
@@ -56,14 +58,14 @@ export default function Students({ year, navigate }) {
         <div className="stat-card">
           <div>
             <div className="label">Collected</div>
-            <div className="value" style={{ fontSize: '1.2rem' }}>₹ {formatINR(totalPaid)}</div>
+            <div className={`value ${figClass(collectionStatus(totalPaid, totalAgreed))}`} style={{ fontSize: '1.2rem' }}>₹ {formatINR(totalPaid)}</div>
             <div className="hint">{totalAgreed > 0 ? `${pctCollected.toFixed(0)}% of agreed` : '—'}</div>
           </div>
         </div>
         <div className="stat-card">
           <div>
             <div className="label">Due Amount</div>
-            <div className="value" style={{ fontSize: '1.2rem' }}>₹ {formatINR(totalDue)}</div>
+            <div className={`value ${figClass(dueStatus(totalPaid, totalAgreed))}`} style={{ fontSize: '1.2rem' }}>₹ {formatINR(totalDue)}</div>
           </div>
         </div>
         <div className="stat-card">
@@ -92,6 +94,7 @@ export default function Students({ year, navigate }) {
             <option>All</option>
             {CLASSES.map((c) => <option key={c}>{c}</option>)}
           </select>
+          <StatusLegend />
           <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--ink-50)' }}>
             {list.length} student{list.length === 1 ? '' : 's'}
           </span>
@@ -141,7 +144,9 @@ export default function Students({ year, navigate }) {
                     <td>{s.language || '—'}</td>
                     <td className="num">{formatINR(s.agreedAmount)}</td>
                     <td className="num">{formatINR(paidTotal(s))}</td>
-                    <td className="num cell-strong">{formatINR(dueAmount(s))}</td>
+                    <td className={`num ${figClass(dueStatus(paidTotal(s), s.agreedAmount))}`}>
+                      {formatINR(dueAmount(s))}
+                    </td>
                     <td className="no-print" onClick={(e) => e.stopPropagation()}>
                       <div className="btn-row" style={{ flexWrap: 'nowrap' }}>
                         <button className="icon-btn" onClick={() => setModal(s)} aria-label={`Edit ${s.name}`}>
@@ -158,7 +163,9 @@ export default function Students({ year, navigate }) {
                   <td colSpan={5}>Total · {list.length} students</td>
                   <td className="num">{formatINR(totalAgreed)}</td>
                   <td className="num">{formatINR(totalPaid)}</td>
-                  <td className="num">{formatINR(totalDue)}</td>
+                  <td className={`num ${figClass(dueStatus(totalPaid, totalAgreed))}`}>
+                    {formatINR(totalDue)}
+                  </td>
                   <td className="no-print" />
                 </tr>
               </tbody>

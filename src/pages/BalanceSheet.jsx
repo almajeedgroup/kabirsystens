@@ -5,6 +5,7 @@ import {
   expensesAnnualTotal,
 } from '../store.js';
 import { formatINR } from '../constants.js';
+import { collectionStatus, figClass } from '../utils/status.js';
 import { SyncIcon } from '../components/Icons.jsx';
 
 export default function BalanceSheet({ year, embedded = false }) {
@@ -74,19 +75,19 @@ export default function BalanceSheet({ year, embedded = false }) {
                   <td className="cell-strong">I PUC</td>
                   <td className="num">{numInput('iPucActual', 'I PUC actual amount')}</td>
                   <td className="num">{numInput('iPucReceived', 'I PUC amount received')}</td>
-                  <td className="num cell-strong">{formatINR(iPucDeficit)}</td>
+                  <td className={`num ${figClass(collectionStatus(sheet.iPucReceived, sheet.iPucActual))}`}>{formatINR(iPucDeficit)}</td>
                 </tr>
                 <tr>
                   <td className="cell-strong">II PUC</td>
                   <td className="num">{numInput('iiPucActual', 'II PUC actual amount')}</td>
                   <td className="num">{numInput('iiPucReceived', 'II PUC amount received')}</td>
-                  <td className="num cell-strong">{formatINR(iiPucDeficit)}</td>
+                  <td className={`num ${figClass(collectionStatus(sheet.iiPucReceived, sheet.iiPucActual))}`}>{formatINR(iiPucDeficit)}</td>
                 </tr>
                 <tr className="total-row">
                   <td>TOTAL</td>
                   <td className="num">₹ {formatINR(totalActual)}</td>
                   <td className="num">₹ {formatINR(totalReceived)}</td>
-                  <td className="num">₹ {formatINR(annualDeficit)}</td>
+                  <td className={`num ${figClass(collectionStatus(totalReceived, totalActual))}`}>₹ {formatINR(annualDeficit)}</td>
                 </tr>
               </tbody>
             </table>
@@ -127,7 +128,7 @@ export default function BalanceSheet({ year, embedded = false }) {
                 </tr>
                 <tr className="total-row">
                   <td>DEFICIT ANNUAL</td>
-                  <td className="num">₹ {formatINR(annualDeficit)}</td>
+                  <td className={`num ${figClass(collectionStatus(totalReceived, totalActual))}`}>₹ {formatINR(annualDeficit)}</td>
                 </tr>
               </tbody>
             </table>
