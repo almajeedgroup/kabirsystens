@@ -1,21 +1,21 @@
-import {
-  getData,
-  getBalanceSheet,
-  expensesAnnualTotal,
-} from '../store.js';
+import { getData, getBalanceSheet, expensesAnnualTotal } from '../store.js';
 import { EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR } from '../constants.js';
 import { exportCSV, exportWord } from '../utils/export.js';
+import {
+  DownloadIcon, PrintIcon, StudentsIcon, TeachersIcon, WalletIcon, ScaleIcon, ReportIcon,
+} from '../components/Icons.jsx';
 
 function studentRows(students, year) {
   const list = students.filter((s) => s.year === year);
   return [
-    ['Adm. No.', 'Name', 'Guardian', 'Class', 'Phone', 'Address', 'Fee Assigned', 'Fee Paid', 'Balance'],
+    ['Adm. No.', 'Name', 'Guardian', 'Class', 'Phone', 'Email', 'Address', 'Fee Assigned', 'Fee Paid', 'Balance'],
     ...list.map((s) => [
       s.admissionNo,
       s.name,
       s.guardianName,
       s.className,
       s.phone,
+      s.email,
       s.address,
       s.feeAssigned,
       s.feePaid,
@@ -26,20 +26,22 @@ function studentRows(students, year) {
 
 function staffRows(staff) {
   return [
-    ['Name', 'Designation', 'Phone', 'Joining Date', 'Monthly Salary'],
-    ...staff.map((s) => [s.name, s.designation, s.phone, s.joinDate, s.salary]),
+    ['Name', 'Designation', 'Subject', 'Qualification', 'Phone', 'Email', 'Joining Date', 'Monthly Salary'],
+    ...staff.map((s) => [
+      s.name, s.designation, s.subject, s.qualification, s.phone, s.email, s.joinDate, s.salary,
+    ]),
   ];
 }
 
-function expenseRows(expenses, year) {
+function expenseRows(expenses, categories, year) {
   const yearData = expenses[year] || {};
   const header = ['Description', ...MONTHS.map((_, mi) => monthLabel(year, mi)), 'Total'];
-  const rows = EXPENSE_CATEGORIES.map((cat) => {
+  const rows = categories.map((cat) => {
     const months = MONTHS.map((_, mi) => Number(yearData[cat]?.[mi] || 0));
     return [cat, ...months, months.reduce((a, b) => a + b, 0)];
   });
   const totals = MONTHS.map((_, mi) =>
-    EXPENSE_CATEGORIES.reduce((a, cat) => a + Number(yearData[cat]?.[mi] || 0), 0)
+    categories.reduce((a, cat) => a + Number(yearData[cat]?.[mi] || 0), 0)
   );
   rows.push(['MONTHLY TOTAL', ...totals, totals.reduce((a, b) => a + b, 0)]);
   return [header, ...rows];
@@ -63,14 +65,16 @@ function balanceRows(sheet, expensesTotal) {
 }
 
 export default function Reports({ year }) {
-  const { students, staff, expenses } = getData();
+  const { students, staff, expenses, customCategories } = getData();
+  const categories = [...EXPENSE_CATEGORIES, ...customCategories];
   const sheet = getBalanceSheet(year);
   const expensesTotal = expensesAnnualTotal(year);
 
   const items = [
     {
+      icon: StudentsIcon,
       title: `Student Register — ${year}`,
-      desc: 'All students admitted for the selected academic year, with fee details.',
+      desc: 'Every student admitted for the year, with contact and fee details.',
       csv: () => exportCSV(`students-${year}.csv`, studentRows(students, year)),
       word: () =>
         exportWord(`students-${year}.doc`, `Student Register ${year}`, [
@@ -78,23 +82,26 @@ export default function Reports({ year }) {
         ]),
     },
     {
-      title: 'Staff Register',
-      desc: 'All staff members with designation and monthly salary.',
-      csv: () => exportCSV('staff.csv', staffRows(staff)),
-      word: () => exportWord('staff.doc', 'Staff Register', [{ rows: staffRows(staff) }]),
+      icon: TeachersIcon,
+      title: 'Teachers & Staff Register',
+      desc: 'All members with designation, subject, qualification and salary.',
+      csv: () => exportCSV('teachers-staff.csv', staffRows(staff)),
+      word: () => exportWord('teachers-staff.doc', 'Teachers & Staff Register', [{ rows: staffRows(staff) }]),
     },
     {
+      icon: WalletIcon,
       title: `Monthly Expenses — ${year}`,
-      desc: 'Category-wise expenses for every month of the academic year.',
-      csv: () => exportCSV(`expenses-${year}.csv`, expenseRows(expenses, year)),
+      desc: 'Category-wise expenses for every month, including custom categories.',
+      csv: () => exportCSV(`expenses-${year}.csv`, expenseRows(expenses, categories, year)),
       word: () =>
         exportWord(`expenses-${year}.doc`, `Monthly Expenses ${year}`, [
-          { rows: expenseRows(expenses, year) },
+          { rows: expenseRows(expenses, categories, year) },
         ]),
     },
     {
+      icon: ScaleIcon,
       title: `Balance Sheet — ${year}`,
-      desc: 'I PUC / II PUC actual, received and deficit amounts with annual expenses.',
+      desc: 'I PUC / II PUC actual, received and deficit, with annual expenses.',
       csv: () => exportCSV(`balance-sheet-${year}.csv`, balanceRows(sheet, expensesTotal)),
       word: () =>
         exportWord(`balance-sheet-${year}.doc`, `Balance Sheet ${year}`, [
@@ -102,27 +109,58 @@ export default function Reports({ year }) {
         ]),
     },
     {
+      icon: ReportIcon,
       title: `Complete Annual Report — ${year}`,
-      desc: 'One Word document containing balance sheet, expenses, students and staff.',
+      desc: 'One Word document: balance sheet, expenses, students, teachers & staff.',
       word: () =>
         exportWord(`annual-report-${year}.doc`, `Annual Report ${year}`, [
           { title: 'Balance Sheet', rows: balanceRows(sheet, expensesTotal) },
-          { title: 'Monthly Expenses', rows: expenseRows(expenses, year) },
+          { title: 'Monthly Expenses', rows: expenseRows(expenses, categories, year) },
           { title: 'Student Register', rows: studentRows(students, year) },
-          { title: 'Staff Register', rows: staffRows(staff) },
+          { title: 'Teachers & Staff Register', rows: staffRows(staff) },
         ]),
     },
   ];
 
   return (
     <>
+      <div className="page-head">
+        <div>
+          <h2>Reports &amp; Export</h2>
+          <p>
+            Download registers as CSV (opens in Excel) or as Word reports on the college letterhead.
+          </p>
+        </div>
+        <button className="btn ghost" onClick={() => window.print()}>
+          <PrintIcon size={16} /> Print this page
+        </button>
+      </div>
+
+      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 260px))' }}>
+        <div className="stat-card">
+          <span className="stat-icon"><StudentsIcon /></span>
+          <div>
+            <div className="label">Students · {year}</div>
+            <div className="value">{students.filter((s) => s.year === year).length}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon"><TeachersIcon /></span>
+          <div>
+            <div className="label">Teachers &amp; Staff</div>
+            <div className="value">{staff.length}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon gold"><WalletIcon /></span>
+          <div>
+            <div className="label">Annual Expenses</div>
+            <div className="value">₹ {formatINR(expensesTotal)}</div>
+          </div>
+        </div>
+      </div>
+
       <div className="card">
-        <h2>Export Data — {year}</h2>
-        <p style={{ marginTop: 0, fontSize: '0.85rem' }}>
-          Download any register as a CSV file (opens in Excel) or a formatted Word
-          report on the college letterhead. Use <strong>Print</strong> on any page
-          (Ctrl&nbsp;+&nbsp;P) for a print/PDF copy.
-        </p>
         <div className="table-wrap">
           <table>
             <thead>
@@ -133,40 +171,33 @@ export default function Reports({ year }) {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
-                <tr key={item.title}>
-                  <td><strong>{item.title}</strong></td>
-                  <td>{item.desc}</td>
+              {items.map(({ icon: ItemIcon, title, desc, csv, word }) => (
+                <tr key={title}>
+                  <td>
+                    <div className="person-cell">
+                      <span className="stat-icon" style={{ width: 36, height: 36 }}>
+                        <ItemIcon size={17} />
+                      </span>
+                      <span className="cell-strong">{title}</span>
+                    </div>
+                  </td>
+                  <td style={{ color: 'var(--ink-70)' }}>{desc}</td>
                   <td>
                     <div className="btn-row">
-                      {item.csv && (
-                        <button className="btn small" onClick={item.csv}>⇩ CSV</button>
+                      {csv && (
+                        <button className="btn subtle small" onClick={csv}>
+                          <DownloadIcon size={15} /> CSV
+                        </button>
                       )}
-                      <button className="btn small secondary" onClick={item.word}>⇩ Word</button>
+                      <button className="btn gold small" onClick={word}>
+                        <DownloadIcon size={15} /> Word
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2>Quick Figures — {year}</h2>
-        <div className="stat-grid" style={{ marginBottom: 0 }}>
-          <div className="stat-card">
-            <div className="label">Students</div>
-            <div className="value">{students.filter((s) => s.year === year).length}</div>
-          </div>
-          <div className="stat-card">
-            <div className="label">Staff</div>
-            <div className="value">{staff.length}</div>
-          </div>
-          <div className="stat-card gold">
-            <div className="label">Annual Expenses</div>
-            <div className="value">₹ {formatINR(expensesTotal)}</div>
-          </div>
         </div>
       </div>
     </>

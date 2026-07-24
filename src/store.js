@@ -7,10 +7,11 @@
 const STORAGE_KEY = 'kabir_college_admin_v1';
 
 const DEFAULT_DATA = {
-  students: [],   // {id, admissionNo, name, guardianName, className, phone, address, year, feeAssigned, feePaid}
-  staff: [],      // {id, name, designation, phone, salary, joinDate}
+  students: [],   // {id, admissionNo, name, guardianName, className, phone, email, address, dob, year, feeAssigned, feePaid, photo}
+  staff: [],      // {id, name, designation, subject, qualification, phone, email, address, salary, joinDate, photo}
   expenses: {},   // { [year]: { [category]: { [monthIndex]: amount } } }
   balanceSheets: {}, // { [year]: { iPucActual, iPucReceived, iiPucActual, iiPucReceived } }
+  customCategories: [], // user-added expense categories beyond the defaults
 };
 
 function load() {
@@ -104,6 +105,28 @@ export function expensesAnnualTotal(year) {
     (sum, months) => sum + Object.values(months).reduce((a, b) => a + Number(b || 0), 0),
     0
   );
+}
+
+// ---- Expense categories ----
+export function addCategory(name) {
+  const clean = name.trim();
+  if (!clean) return;
+  if (!data.customCategories.includes(clean)) {
+    data.customCategories = [...data.customCategories, clean];
+    notify();
+  }
+}
+
+export function removeCategory(name) {
+  data.customCategories = data.customCategories.filter((c) => c !== name);
+  // Drop the category's recorded amounts across all years.
+  const expenses = {};
+  for (const [year, cats] of Object.entries(data.expenses)) {
+    const { [name]: _removed, ...rest } = cats;
+    expenses[year] = rest;
+  }
+  data.expenses = expenses;
+  notify();
 }
 
 // ---- Balance sheet ----

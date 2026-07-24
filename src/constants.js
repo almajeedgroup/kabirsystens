@@ -28,6 +28,26 @@ export const EXPENSE_CATEGORIES = [
 
 export const CLASSES = ['I PUC', 'II PUC'];
 
+// Downscale an uploaded photo to a small JPEG data URL for localStorage.
+export function readPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 256;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 // "2025-26" style labels. Month labels for a year like 2025-26 are
 // Jun-25 ... Dec-25, Jan-26 ... May-26.
 export function monthLabel(year, monthIndex) {
