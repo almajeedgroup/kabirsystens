@@ -1,12 +1,16 @@
+import { useRef, useState } from 'react';
 import {
-  getData, getBalanceSheet, expensesAnnualTotal, paidTotal, dueAmount, feeDeficit,
+  getData, getBalanceSheet, setBalanceSheet, expensesAnnualTotal, paidTotal, dueAmount, feeDeficit,
+  importStudents, importStaffMembers, importExpenses,
 } from '../store.js';
+import { parseCSV, detectDomain, mapRows } from '../utils/csv.js';
+import Modal from '../components/Modal.jsx';
 import {
   EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR, PAYMENT_STAGES,
 } from '../constants.js';
 import { exportCSV, exportWord } from '../utils/export.js';
 import {
-  DownloadIcon, PrintIcon, StudentsIcon, TeachersIcon, WalletIcon, ScaleIcon, ReportIcon, RupeeIcon,
+  DownloadIcon, UploadIcon, PrintIcon, StudentsIcon, TeachersIcon, WalletIcon, ScaleIcon, ReportIcon, RupeeIcon,
 } from '../components/Icons.jsx';
 
 function studentRows(students, year) {
@@ -100,11 +104,65 @@ function balanceRows(sheet, expensesTotal) {
   ];
 }
 
-export default function Reports({ year }) {
+export default function ImportExport({ year }) {
   const { students, staff, expenses, customCategories } = getData();
   const categories = [...EXPENSE_CATEGORIES, ...customCategories];
   const sheet = getBalanceSheet(year);
   const expensesTotal = expensesAnnualTotal(year);
+
+  // ---- Import state ----
+  const [preview, setPreview] = useState(null); // {detection, mapped, fileName}
+  const [importError, setImportError] = useState('');
+  const [importResult, setImportResult] = useState('');
+  const fileRef = useRef(null);
+
+  const onFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImportError('');
+    setImportResult('');
+    const text = await file.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2) {
+      setImportError('The file appears to be empty or has no data rows.');
+      return;
+    }
+    const detection = detectDomain(rows);
+    if (!detection) {
+      setImportError(
+        'Could not recognise this file. Use headers like the exported sheets — e.g. a fee register (Name, Class, Agreed Amount, instalments…), a staff list (Name, Designation, Salary…) or a monthly expense sheet (Description + month columns).'
+      );
+      return;
+    }
+    const mapped = mapRows(rows, detection);
+    const count = Array.isArray(mapped) ? mapped.length : Object.keys(mapped).length;
+    if (!count) {
+      setImportError(`Detected "${detection.label}" but found no usable rows.`);
+      return;
+    }
+    setPreview({ detection, mapped, fileName: file.name });
+  };
+
+  const confirmImport = () => {
+    const { detection, mapped } = preview;
+    let msg = '';
+    if (detection.type === 'students' || detection.type === 'feeRegister') {
+      const { added, updated } = importStudents(mapped, year);
+      msg = `${detection.label} → Students (${year}): ${added} added, ${updated} updated.`;
+    } else if (detection.type === 'staff') {
+      const { added, updated } = importStaffMembers(mapped);
+      msg = `Teachers & Staff: ${added} added, ${updated} updated.`;
+    } else if (detection.type === 'expenses') {
+      const { rows, cells } = importExpenses(year, mapped, categories);
+      msg = `Monthly Expenses (${year}): ${rows} categories, ${cells} amounts imported.`;
+    } else if (detection.type === 'balance') {
+      setBalanceSheet(year, mapped);
+      msg = `Balance Sheet (${year}) updated.`;
+    }
+    setPreview(null);
+    setImportResult(msg);
+  };
 
   const items = [
     {
@@ -169,45 +227,61 @@ export default function Reports({ year }) {
     },
   ];
 
+  const previewCount = preview
+    ? Array.isArray(preview.mapped)
+      ? preview.mapped.length
+      : 1
+    : 0;
+
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h2>Reports &amp; Export</h2>
-          <p>
-            Download registers as CSV (opens in Excel) or as Word reports on the college letterhead.
-          </p>
-        </div>
-        <button className="btn ghost" onClick={() => window.print()}>
-          <PrintIcon size={16} /> Print this page
-        </button>
-      </div>
-
-      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 260px))' }}>
-        <div className="stat-card">
-          <span className="stat-icon"><StudentsIcon /></span>
+      <div className="card">
+        <div className="card-head">
           <div>
-            <div className="label">Students · {year}</div>
-            <div className="value">{students.filter((s) => s.year === year).length}</div>
+            <h3>Import Data (CSV)</h3>
+            <div className="sub">
+              Upload any CSV — a fee register, student list, teachers &amp; staff list, monthly
+              expense sheet or balance sheet. The file is recognised automatically and every
+              column is allocated to the right place for academic year {year}.
+            </div>
           </div>
+          <button className="btn" onClick={() => fileRef.current?.click()}>
+            <UploadIcon size={16} /> Choose CSV File
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={onFile}
+            style={{ display: 'none' }}
+            aria-label="Import CSV file"
+          />
         </div>
-        <div className="stat-card">
-          <span className="stat-icon"><TeachersIcon /></span>
-          <div>
-            <div className="label">Teachers &amp; Staff</div>
-            <div className="value">{staff.length}</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <span className="stat-icon gold"><WalletIcon /></span>
-          <div>
-            <div className="label">Annual Expenses</div>
-            <div className="value">₹ {formatINR(expensesTotal)}</div>
-          </div>
+        <div className="card-body">
+          {importError && <div className="notice error">{importError}</div>}
+          {importResult && <div className="notice ok">✓ {importResult}</div>}
+          {!importError && !importResult && (
+            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--ink-50)' }}>
+              Matching records are updated instead of duplicated — students by admission number
+              or name, staff by name, expense categories by their description (new categories
+              are created automatically).
+            </p>
+          )}
         </div>
       </div>
 
       <div className="card">
+        <div className="card-head">
+          <div>
+            <h3>Export &amp; Reports</h3>
+            <div className="sub">
+              Download registers as CSV (opens in Excel) or as Word reports on the college letterhead.
+            </div>
+          </div>
+          <button className="btn ghost" onClick={() => window.print()}>
+            <PrintIcon size={16} /> Print
+          </button>
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
@@ -247,6 +321,59 @@ export default function Reports({ year }) {
           </table>
         </div>
       </div>
+
+      {preview && (
+        <Modal title="Confirm Import" onClose={() => setPreview(null)} wide>
+          <p style={{ marginTop: 0, fontSize: '0.9rem' }}>
+            <strong>{preview.fileName}</strong> was recognised as{' '}
+            <span className="badge solid">{preview.detection.label}</span>
+          </p>
+          <p style={{ fontSize: '0.85rem' }}>
+            {Array.isArray(preview.mapped) ? (
+              <>
+                <strong>{previewCount}</strong> record{previewCount === 1 ? '' : 's'} will be
+                allocated to <strong>{preview.detection.label}</strong>
+                {['students', 'feeRegister', 'expenses'].includes(preview.detection.type) && (
+                  <> for academic year <strong>{year}</strong></>
+                )}
+                . Existing matches will be updated, everything else added.
+              </>
+            ) : (
+              <>The balance sheet figures for <strong>{year}</strong> will be replaced with the imported values.</>
+            )}
+          </p>
+          {Array.isArray(preview.mapped) && (
+            <div className="table-wrap" style={{ border: 'var(--hairline)', borderRadius: 8, marginBottom: 16 }}>
+              <table>
+                <thead>
+                  <tr>
+                    {Object.keys(preview.mapped[0])
+                      .filter((k) => k !== 'payments' && k !== 'months')
+                      .slice(0, 6)
+                      .map((k) => <th scope="col" key={k}>{k}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.mapped.slice(0, 5).map((r, i) => (
+                    <tr key={i}>
+                      {Object.entries(r)
+                        .filter(([k]) => k !== 'payments' && k !== 'months')
+                        .slice(0, 6)
+                        .map(([k, v]) => <td key={k}>{String(v) || '—'}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="btn-row" style={{ justifyContent: 'flex-end' }}>
+            <button className="btn ghost" onClick={() => setPreview(null)}>Cancel</button>
+            <button className="btn" onClick={confirmImport}>
+              <UploadIcon size={15} /> Import {Array.isArray(preview.mapped) ? `${previewCount} record${previewCount === 1 ? '' : 's'}` : 'balance sheet'}
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

@@ -119,6 +119,47 @@ export function deleteStudent(id) {
   notify();
 }
 
+// Bulk import: merge incoming students into the given year. Matches an
+// existing record by admission number, falling back to name; non-empty
+// incoming fields overwrite, everything else is preserved.
+export function importStudents(incoming, year) {
+  let added = 0;
+  let updated = 0;
+  let students = [...data.students];
+  for (const rec of incoming) {
+    const match = students.find(
+      (s) =>
+        s.year === year &&
+        ((rec.admissionNo && s.admissionNo === rec.admissionNo) ||
+          s.name.trim().toLowerCase() === rec.name.trim().toLowerCase())
+    );
+    if (match) {
+      const merged = { ...match };
+      for (const [k, v] of Object.entries(rec)) {
+        if (k === 'payments') continue;
+        if (v !== '' && v !== undefined && v !== null) merged[k] = v;
+      }
+      if (rec.payments) {
+        merged.payments = { ...match.payments };
+        for (const [stage, p] of Object.entries(rec.payments)) {
+          const clean = Object.fromEntries(
+            Object.entries(p).filter(([, v]) => v !== '' && v !== undefined)
+          );
+          merged.payments[stage] = { ...merged.payments[stage], ...clean };
+        }
+      }
+      students = students.map((s) => (s.id === match.id ? merged : s));
+      updated++;
+    } else {
+      students.push(migrateStudent({ ...rec, year, id: uid() }));
+      added++;
+    }
+  }
+  data.students = students;
+  notify();
+  return { added, updated };
+}
+
 // ---- Staff ----
 export function addStaff(member) {
   data.staff = [...data.staff, { ...member, id: uid() }];
@@ -133,6 +174,55 @@ export function updateStaff(id, patch) {
 export function deleteStaff(id) {
   data.staff = data.staff.filter((s) => s.id !== id);
   notify();
+}
+
+// Bulk import: merge incoming staff records, matching by name.
+export function importStaffMembers(incoming) {
+  let added = 0;
+  let updated = 0;
+  let staff = [...data.staff];
+  for (const rec of incoming) {
+    const match = staff.find(
+      (s) => s.name.trim().toLowerCase() === rec.name.trim().toLowerCase()
+    );
+    if (match) {
+      const merged = { ...match };
+      for (const [k, v] of Object.entries(rec)) {
+        if (v !== '' && v !== undefined && v !== null) merged[k] = v;
+      }
+      staff = staff.map((s) => (s.id === match.id ? merged : s));
+      updated++;
+    } else {
+      staff.push({ ...rec, id: uid() });
+      added++;
+    }
+  }
+  data.staff = staff;
+  notify();
+  return { added, updated };
+}
+
+// Bulk import of a monthly-expenses sheet for one year. Categories not in
+// the sheet yet are created automatically.
+export function importExpenses(year, rows, knownCategories) {
+  const known = knownCategories.map((c) => c.toLowerCase());
+  let cells = 0;
+  for (const { category, months } of rows) {
+    if (!known.includes(category.toLowerCase())) {
+      data.customCategories = [...data.customCategories, category];
+      known.push(category.toLowerCase());
+    }
+    // Match stored category casing.
+    const canonical =
+      knownCategories.find((c) => c.toLowerCase() === category.toLowerCase()) ||
+      category;
+    const yearData = { ...(data.expenses[year] || {}) };
+    yearData[canonical] = { ...(yearData[canonical] || {}), ...months };
+    data.expenses = { ...data.expenses, [year]: yearData };
+    cells += Object.keys(months).length;
+  }
+  notify();
+  return { rows: rows.length, cells };
 }
 
 // ---- Expenses ----

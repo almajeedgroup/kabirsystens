@@ -41,9 +41,11 @@ export default function BarChart({ labels, values, height = 220 }) {
               stroke="#000"
               strokeOpacity={i === 0 ? 0.28 : 0.08}
             />
-            <text x={pad.left - 8} y={y(t) + 4} textAnchor="end" className="chart-tick">
-              {short(t)}
-            </text>
+            {(hasData || i === 0) && (
+              <text x={pad.left - 8} y={y(t) + 4} textAnchor="end" className="chart-tick">
+                {short(t)}
+              </text>
+            )}
           </g>
         ))}
         {values.map((v, i) => {

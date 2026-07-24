@@ -651,6 +651,70 @@ input[type='file'] {
   background: #fafcff;
 }
 
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.section-head p {
+  color: var(--ink-50);
+  font-size: 0.86rem;
+}
+
+/* ================= Tabs ================= */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: var(--hairline);
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 9px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink-50);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--azure);
+}
+
+/* ================= Notices ================= */
+.notice {
+  border: var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 0.85rem;
+}
+
+.notice.ok {
+  border-color: var(--azure);
+  background: var(--azure-50);
+}
+
+.notice.error {
+  border-color: var(--gold);
+  background: var(--gold-50);
+}
+
 /* ================= Badges & misc ================= */
 .badge {
   display: inline-block;

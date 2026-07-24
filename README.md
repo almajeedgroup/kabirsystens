@@ -10,9 +10,29 @@ College administration web app for **Kabir Independent PU College for Women**
 | **Dashboard** | Overview of students, staff, fees received, expenses and annual deficit for the selected academic year |
 | **Students** | Admission register (Sl.#, class, combination, language, agreed/paid/due) with search and class filter; every student has a full **profile page** with the complete **fee register** — actual/agreed amount, deficit, admission payment and 1st/2nd/3rd instalments (amount, date, receipt #, mode of payment), grand total, due amount, remarks — plus payment analytics |
 | **Teachers & Staff** | Faculty register with designation, subject, qualification and salary; every member has a full **profile page** |
-| **Monthly Expenses** | 12 default expense categories (Salaries … Miscellaneous) plus **user-added custom categories**, across the June–May academic year, with automatic row/column/annual totals and a dashboard chart |
+| **Finance** | A single hub for everything financial, organised into four tabs (see below) |
+
+### The Finance hub
+
+All money-related work lives on one page, split into tabs:
+
+| Tab | What it does |
+| --- | --- |
+| **Overview** | Fees collected / due, expenses, salary outgo and net position at a glance, an expense-trend chart, class-wise fee-register progress and a balance-sheet snapshot |
+| **Monthly Expenses** | 12 default categories (Salaries … Miscellaneous) plus **user-added custom categories**, across the June–May academic year, with automatic row/column/annual totals |
 | **Balance Sheet** | Per-year I PUC / II PUC actual amount, amount received and deficit, annual summary with expenses; can auto-fill from student fee records |
-| **Reports & Export** | Every register downloadable as CSV or a Word report on the college letterhead; every page is print/PDF ready (Ctrl+P) |
+| **Import & Export** | Smart CSV **import** (auto-detects and allocates — see below), plus CSV / Word / print export of every register on the college letterhead |
+
+### Smart CSV import
+
+Upload any CSV on the Finance → Import & Export tab and the app inspects its
+headers to recognise which kind of sheet it is — **fee register, student list,
+teachers & staff list, monthly expense sheet or balance sheet** — then maps every
+column to the right field and allocates the records to the correct domain for the
+selected academic year. A preview confirms the detection before anything is saved.
+Existing records are updated in place rather than duplicated (students by admission
+number or name, staff by name, expense categories by description — unknown
+categories are created automatically).
 
 The **Academic Year** selector in the top bar switches every module between
 years (June through May, e.g. 2025-26).

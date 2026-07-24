@@ -7,7 +7,7 @@ import {
 import { formatINR } from '../constants.js';
 import { SyncIcon } from '../components/Icons.jsx';
 
-export default function BalanceSheet({ year }) {
+export default function BalanceSheet({ year, embedded = false }) {
   const sheet = getBalanceSheet(year);
   const expenses = expensesAnnualTotal(year);
 
@@ -33,10 +33,10 @@ export default function BalanceSheet({ year }) {
 
   return (
     <>
-      <div className="page-head">
+      <div className={embedded ? 'section-head' : 'page-head'}>
         <div>
-          <h2>Balance Sheet {year}</h2>
-          <p>Class-wise fee position and the annual summary for the academic year.</p>
+          {!embedded && <h2>Balance Sheet {year}</h2>}
+          <p style={embedded ? { marginTop: 0 } : undefined}>Class-wise fee position and the annual summary for the academic year.</p>
         </div>
         <button
           className="btn gold no-print"

@@ -4,7 +4,7 @@ import { EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR } from '../constants.
 import { PlusIcon, TrashIcon } from '../components/Icons.jsx';
 import Modal from '../components/Modal.jsx';
 
-export default function Expenses({ year }) {
+export default function Expenses({ year, embedded = false }) {
   const { expenses, customCategories } = getData();
   const yearData = expenses[year] || {};
   const [adding, setAdding] = useState(false);
@@ -39,10 +39,10 @@ export default function Expenses({ year }) {
 
   return (
     <>
-      <div className="page-head">
+      <div className={embedded ? 'section-head' : 'page-head'}>
         <div>
-          <h2>Monthly Expenses</h2>
-          <p>
+          {!embedded && <h2>Monthly Expenses</h2>}
+          <p style={embedded ? { marginTop: 0 } : undefined}>
             Category-wise spending for {year} (June–May). Type an amount in any cell — totals update instantly.
           </p>
         </div>

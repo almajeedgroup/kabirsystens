@@ -3,16 +3,14 @@ import { COLLEGE, academicYearOptions, currentAcademicYear } from './constants.j
 import { subscribe, getData } from './store.js';
 import Logo from './components/Logo.jsx';
 import {
-  HomeIcon, StudentsIcon, TeachersIcon, WalletIcon, ScaleIcon, ReportIcon, CalendarIcon,
+  HomeIcon, StudentsIcon, TeachersIcon, WalletIcon, CalendarIcon,
 } from './components/Icons.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Students from './pages/Students.jsx';
 import StudentProfile from './pages/StudentProfile.jsx';
 import Teachers from './pages/Teachers.jsx';
 import TeacherProfile from './pages/TeacherProfile.jsx';
-import Expenses from './pages/Expenses.jsx';
-import BalanceSheet from './pages/BalanceSheet.jsx';
-import Reports from './pages/Reports.jsx';
+import Finance from './pages/Finance.jsx';
 
 const NAV = [
   {
@@ -28,14 +26,7 @@ const NAV = [
   },
   {
     title: 'Finance',
-    items: [
-      { id: 'expenses', label: 'Monthly Expenses', icon: WalletIcon },
-      { id: 'balance', label: 'Balance Sheet', icon: ScaleIcon },
-    ],
-  },
-  {
-    title: 'Documents',
-    items: [{ id: 'reports', label: 'Reports & Export', icon: ReportIcon }],
+    items: [{ id: 'finance', label: 'Finance', icon: WalletIcon }],
   },
 ];
 
@@ -45,9 +36,7 @@ const TITLES = {
   studentProfile: 'Student Profile',
   teachers: 'Teachers & Staff',
   teacherProfile: 'Teacher Profile',
-  expenses: 'Monthly Expenses',
-  balance: 'Balance Sheet',
-  reports: 'Reports & Export',
+  finance: 'Finance',
 };
 
 // Profile pages highlight their parent list in the nav.
@@ -77,9 +66,7 @@ export default function App() {
     studentProfile: <StudentProfile {...pageProps} />,
     teachers: <Teachers {...pageProps} />,
     teacherProfile: <TeacherProfile {...pageProps} />,
-    expenses: <Expenses {...pageProps} />,
-    balance: <BalanceSheet {...pageProps} />,
-    reports: <Reports {...pageProps} />,
+    finance: <Finance {...pageProps} />,
   }[view.page];
 
   return (

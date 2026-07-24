@@ -75,6 +75,10 @@ export const DownloadIcon = (p) => (
   <Icon {...p}><path d="M12 3v11" /><path d="m7.5 10.5 4.5 4.5 4.5-4.5" /><path d="M4 20h16" /></Icon>
 );
 
+export const UploadIcon = (p) => (
+  <Icon {...p}><path d="M12 15V4" /><path d="m7.5 7.5 4.5-4.5 4.5 4.5" /><path d="M4 20h16" /></Icon>
+);
+
 export const PrintIcon = (p) => (
   <Icon {...p}><path d="M7 8V3h10v5" /><rect x="4" y="8" width="16" height="8" rx="1.5" /><path d="M7 13h10v8H7v-8Z" /></Icon>
 );

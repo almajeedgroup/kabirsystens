@@ -59,7 +59,7 @@ export default function Dashboard({ year, navigate }) {
             <h3>Monthly Expenses</h3>
             <div className="sub">Total spend per month, June {year.slice(0, 4)} – May. Full breakdown in Monthly Expenses.</div>
           </div>
-          <button className="btn ghost small" onClick={() => navigate('expenses')}>
+          <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'expenses' })}>
             Open expense sheet
           </button>
         </div>
@@ -116,7 +116,7 @@ export default function Dashboard({ year, navigate }) {
         <div className="card" style={{ marginBottom: 0 }}>
           <div className="card-head">
             <h3>Fee Position — {year}</h3>
-            <button className="btn ghost small" onClick={() => navigate('balance')}>Balance sheet</button>
+            <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'balance' })}>Balance sheet</button>
           </div>
           <div className="card-body">
             {['I PUC', 'II PUC'].map((cls) => {
