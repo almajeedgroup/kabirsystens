@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
-import { CLASSES, readPhoto } from '../constants.js';
+import { CLASSES, readPhoto, formatINR } from '../constants.js';
 import { addStudent, updateStudent } from '../store.js';
 
 const EMPTY = {
@@ -8,12 +8,15 @@ const EMPTY = {
   name: '',
   guardianName: '',
   className: 'I PUC',
+  combination: '',
+  language: '',
   dob: '',
   phone: '',
   email: '',
   address: '',
-  feeAssigned: '',
-  feePaid: '',
+  actualAmount: '',
+  agreedAmount: '',
+  remarks: '',
   photo: '',
 };
 
@@ -37,9 +40,12 @@ export default function StudentForm({ student, year, onClose }) {
     onClose();
   };
 
+  const deficit = Number(form.actualAmount || 0) - Number(form.agreedAmount || 0);
+
   return (
     <Modal title={student ? 'Edit Student' : `Admit Student — ${year}`} onClose={onClose} wide>
       <form onSubmit={submit}>
+        <h3 className="form-section">Basic Details</h3>
         <div className="form-grid">
           <label className="field">
             Student Name <span className="req">*</span>
@@ -54,6 +60,14 @@ export default function StudentForm({ student, year, onClose }) {
             <select value={form.className} onChange={set('className')}>
               {CLASSES.map((c) => <option key={c}>{c}</option>)}
             </select>
+          </label>
+          <label className="field">
+            Combination
+            <input value={form.combination} onChange={set('combination')} placeholder="e.g. PCMB, CEBA" />
+          </label>
+          <label className="field">
+            Language
+            <input value={form.language} onChange={set('language')} placeholder="e.g. Urdu, Kannada, Hindi" />
           </label>
           <label className="field">
             Guardian Name
@@ -76,18 +90,34 @@ export default function StudentForm({ student, year, onClose }) {
             <input value={form.address} onChange={set('address')} placeholder="Residential address" />
           </label>
           <label className="field">
-            Fee Assigned (₹)
-            <input type="number" min="0" value={form.feeAssigned} onChange={set('feeAssigned')} />
-          </label>
-          <label className="field">
-            Fee Paid (₹)
-            <input type="number" min="0" value={form.feePaid} onChange={set('feePaid')} />
-          </label>
-          <label className="field">
             Photo
             <input type="file" accept="image/*" onChange={onPhoto} />
           </label>
         </div>
+
+        <h3 className="form-section">Financial Summary</h3>
+        <div className="form-grid">
+          <label className="field">
+            Actual Amount (₹)
+            <input type="number" min="0" value={form.actualAmount} onChange={set('actualAmount')} />
+          </label>
+          <label className="field">
+            Agreed Amount (₹)
+            <input type="number" min="0" value={form.agreedAmount} onChange={set('agreedAmount')} />
+          </label>
+          <label className="field">
+            Deficit (₹)
+            <input value={formatINR(deficit)} readOnly aria-label="Deficit, calculated automatically" style={{ background: 'var(--azure-50)' }} />
+          </label>
+          <label className="field" style={{ gridColumn: '1 / -1' }}>
+            Remarks
+            <input value={form.remarks} onChange={set('remarks')} placeholder="Any note about this student's fees" />
+          </label>
+        </div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--ink-50)', marginTop: 0 }}>
+          Admission payment and instalments are recorded on the student's profile page.
+        </p>
+
         <div className="btn-row" style={{ justifyContent: 'flex-end' }}>
           <button className="btn ghost" type="button" onClick={onClose}>Cancel</button>
           <button className="btn" type="submit">{student ? 'Save Changes' : 'Admit Student'}</button>

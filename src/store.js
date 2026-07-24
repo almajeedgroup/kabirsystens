@@ -7,21 +7,75 @@
 const STORAGE_KEY = 'kabir_college_admin_v1';
 
 const DEFAULT_DATA = {
-  students: [],   // {id, admissionNo, name, guardianName, className, phone, email, address, dob, year, feeAssigned, feePaid, photo}
+  students: [],   // {id, admissionNo, name, guardianName, className, combination, language, phone, email,
+                  //  address, dob, year, actualAmount, agreedAmount, remarks, photo,
+                  //  payments: {admission|inst1|inst2|inst3: {amount, date, receipt, mode}}
   staff: [],      // {id, name, designation, subject, qualification, phone, email, address, salary, joinDate, photo}
   expenses: {},   // { [year]: { [category]: { [monthIndex]: amount } } }
   balanceSheets: {}, // { [year]: { iPucActual, iPucReceived, iiPucActual, iiPucReceived } }
   customCategories: [], // user-added expense categories beyond the defaults
 };
 
+const EMPTY_PAYMENTS = {
+  admission: { amount: '', date: '', receipt: '', mode: '' },
+  inst1: { amount: '', date: '', receipt: '', mode: '' },
+  inst2: { amount: '', date: '', receipt: '', mode: '' },
+  inst3: { amount: '', date: '', receipt: '', mode: '' },
+};
+
+// Bring records saved by earlier versions (feeAssigned/feePaid) onto the
+// fee-register schema (actual/agreed amounts + staged payments).
+function migrateStudent(s) {
+  const payments = { ...structuredClone(EMPTY_PAYMENTS), ...(s.payments || {}) };
+  if (!s.payments && s.feePaid) payments.admission.amount = s.feePaid;
+  return {
+    combination: '',
+    language: '',
+    remarks: '',
+    ...s,
+    actualAmount: s.actualAmount ?? s.feeAssigned ?? '',
+    agreedAmount: s.agreedAmount ?? s.feeAssigned ?? '',
+    payments,
+  };
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return structuredClone(DEFAULT_DATA);
-    return { ...structuredClone(DEFAULT_DATA), ...JSON.parse(raw) };
+    const parsed = { ...structuredClone(DEFAULT_DATA), ...JSON.parse(raw) };
+    parsed.students = parsed.students.map(migrateStudent);
+    return parsed;
   } catch {
     return structuredClone(DEFAULT_DATA);
   }
+}
+
+// Total received across the admission payment and all instalments.
+export function paidTotal(student) {
+  return Object.values(student.payments || {}).reduce(
+    (a, p) => a + Number(p.amount || 0),
+    0
+  );
+}
+
+// Due = agreed amount minus everything received so far.
+export function dueAmount(student) {
+  return Number(student.agreedAmount || 0) - paidTotal(student);
+}
+
+// Deficit (concession) = actual fee minus the agreed fee.
+export function feeDeficit(student) {
+  return Number(student.actualAmount || 0) - Number(student.agreedAmount || 0);
+}
+
+export function updatePayment(studentId, stage, patch) {
+  data.students = data.students.map((s) =>
+    s.id === studentId
+      ? { ...s, payments: { ...s.payments, [stage]: { ...s.payments[stage], ...patch } } }
+      : s
+  );
+  notify();
 }
 
 function save(data) {
@@ -51,7 +105,7 @@ function uid() {
 
 // ---- Students ----
 export function addStudent(student) {
-  data.students = [...data.students, { ...student, id: uid() }];
+  data.students = [...data.students, migrateStudent({ ...student, id: uid() })];
   notify();
 }
 
@@ -147,16 +201,17 @@ export function setBalanceSheet(year, sheet) {
 }
 
 // Fill the balance sheet from student fee records for the given year.
+// Actual = sum of actual fee amounts; received = everything collected
+// across the admission payment and instalments.
 export function syncBalanceSheetFromStudents(year) {
   const students = data.students.filter((s) => s.year === year);
-  const sum = (cls, field) =>
-    students
-      .filter((s) => s.className === cls)
-      .reduce((a, s) => a + Number(s[field] || 0), 0);
+  const byClass = (cls) => students.filter((s) => s.className === cls);
+  const actual = (cls) => byClass(cls).reduce((a, s) => a + Number(s.actualAmount || 0), 0);
+  const received = (cls) => byClass(cls).reduce((a, s) => a + paidTotal(s), 0);
   setBalanceSheet(year, {
-    iPucActual: sum('I PUC', 'feeAssigned'),
-    iPucReceived: sum('I PUC', 'feePaid'),
-    iiPucActual: sum('II PUC', 'feeAssigned'),
-    iiPucReceived: sum('II PUC', 'feePaid'),
+    iPucActual: actual('I PUC'),
+    iPucReceived: received('I PUC'),
+    iiPucActual: actual('II PUC'),
+    iiPucReceived: received('II PUC'),
   });
 }

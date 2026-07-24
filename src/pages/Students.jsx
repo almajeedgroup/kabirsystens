@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getData, deleteStudent } from '../store.js';
+import { getData, deleteStudent, paidTotal, dueAmount } from '../store.js';
 import { CLASSES, formatINR } from '../constants.js';
 import Avatar from '../components/Avatar.jsx';
 import StudentForm from '../components/StudentForm.jsx';
@@ -11,18 +11,21 @@ export default function Students({ year, navigate }) {
   const [filterClass, setFilterClass] = useState('All');
   const [search, setSearch] = useState('');
 
-  const list = students
-    .filter((s) => s.year === year)
+  const yearList = students.filter((s) => s.year === year);
+  const list = yearList
     .filter((s) => filterClass === 'All' || s.className === filterClass)
     .filter(
       (s) =>
         !search ||
         s.name.toLowerCase().includes(search.toLowerCase()) ||
-        (s.admissionNo || '').toLowerCase().includes(search.toLowerCase())
+        (s.admissionNo || '').toLowerCase().includes(search.toLowerCase()) ||
+        (s.combination || '').toLowerCase().includes(search.toLowerCase())
     );
 
-  const totalAssigned = list.reduce((a, s) => a + Number(s.feeAssigned || 0), 0);
-  const totalPaid = list.reduce((a, s) => a + Number(s.feePaid || 0), 0);
+  const totalAgreed = list.reduce((a, s) => a + Number(s.agreedAmount || 0), 0);
+  const totalPaid = list.reduce((a, s) => a + paidTotal(s), 0);
+  const totalDue = list.reduce((a, s) => a + dueAmount(s), 0);
+  const pctCollected = totalAgreed > 0 ? Math.min(100, (totalPaid / totalAgreed) * 100) : 0;
 
   const remove = (e, s) => {
     e.stopPropagation();
@@ -36,11 +39,42 @@ export default function Students({ year, navigate }) {
       <div className="page-head">
         <div>
           <h2>Students</h2>
-          <p>Admission register for {year}. Click a student to open their profile.</p>
+          <p>Admission register for {year}. Click a student to open their profile and fee register.</p>
         </div>
         <button className="btn" onClick={() => setModal('new')}>
           <PlusIcon size={17} /> Admit Student
         </button>
+      </div>
+
+      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))' }}>
+        <div className="stat-card">
+          <div>
+            <div className="label">Agreed Amount</div>
+            <div className="value" style={{ fontSize: '1.2rem' }}>₹ {formatINR(totalAgreed)}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="label">Collected</div>
+            <div className="value" style={{ fontSize: '1.2rem' }}>₹ {formatINR(totalPaid)}</div>
+            <div className="hint">{totalAgreed > 0 ? `${pctCollected.toFixed(0)}% of agreed` : '—'}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="label">Due Amount</div>
+            <div className="value" style={{ fontSize: '1.2rem' }}>₹ {formatINR(totalDue)}</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div>
+            <div className="label">Students</div>
+            <div className="value" style={{ fontSize: '1.2rem' }}>{list.length}</div>
+            <div className="hint">
+              {list.filter((s) => dueAmount(s) > 0).length} with dues pending
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="card">
@@ -48,7 +82,7 @@ export default function Students({ year, navigate }) {
           <div className="search-box">
             <SearchIcon size={17} />
             <input
-              placeholder="Search by name or admission no."
+              placeholder="Search name, admission no. or combination"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label="Search students"
@@ -74,23 +108,25 @@ export default function Students({ year, navigate }) {
             <table>
               <thead>
                 <tr>
+                  <th scope="col">Sl.#</th>
                   <th scope="col">Student</th>
                   <th scope="col">Class</th>
-                  <th scope="col">Guardian</th>
-                  <th scope="col">Phone</th>
-                  <th scope="col" className="num">Fee Assigned</th>
-                  <th scope="col" className="num">Fee Paid</th>
-                  <th scope="col" className="num">Balance</th>
+                  <th scope="col">Combination</th>
+                  <th scope="col">Language</th>
+                  <th scope="col" className="num">Agreed (₹)</th>
+                  <th scope="col" className="num">Paid (₹)</th>
+                  <th scope="col" className="num">Due (₹)</th>
                   <th scope="col" className="no-print" aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
-                {list.map((s) => (
+                {list.map((s, i) => (
                   <tr
                     key={s.id}
                     className="clickable"
                     onClick={() => navigate('studentProfile', { id: s.id })}
                   >
+                    <td>{i + 1}</td>
                     <td>
                       <div className="person-cell">
                         <Avatar name={s.name} photo={s.photo} size={38} />
@@ -101,13 +137,11 @@ export default function Students({ year, navigate }) {
                       </div>
                     </td>
                     <td><span className="badge">{s.className}</span></td>
-                    <td>{s.guardianName || '—'}</td>
-                    <td>{s.phone || '—'}</td>
-                    <td className="num">₹ {formatINR(s.feeAssigned)}</td>
-                    <td className="num">₹ {formatINR(s.feePaid)}</td>
-                    <td className="num cell-strong">
-                      ₹ {formatINR(Number(s.feeAssigned || 0) - Number(s.feePaid || 0))}
-                    </td>
+                    <td>{s.combination || '—'}</td>
+                    <td>{s.language || '—'}</td>
+                    <td className="num">{formatINR(s.agreedAmount)}</td>
+                    <td className="num">{formatINR(paidTotal(s))}</td>
+                    <td className="num cell-strong">{formatINR(dueAmount(s))}</td>
                     <td className="no-print" onClick={(e) => e.stopPropagation()}>
                       <div className="btn-row" style={{ flexWrap: 'nowrap' }}>
                         <button className="icon-btn" onClick={() => setModal(s)} aria-label={`Edit ${s.name}`}>
@@ -121,10 +155,10 @@ export default function Students({ year, navigate }) {
                   </tr>
                 ))}
                 <tr className="total-row">
-                  <td colSpan={4}>Total · {list.length} students</td>
-                  <td className="num">₹ {formatINR(totalAssigned)}</td>
-                  <td className="num">₹ {formatINR(totalPaid)}</td>
-                  <td className="num">₹ {formatINR(totalAssigned - totalPaid)}</td>
+                  <td colSpan={5}>Total · {list.length} students</td>
+                  <td className="num">{formatINR(totalAgreed)}</td>
+                  <td className="num">{formatINR(totalPaid)}</td>
+                  <td className="num">{formatINR(totalDue)}</td>
                   <td className="no-print" />
                 </tr>
               </tbody>

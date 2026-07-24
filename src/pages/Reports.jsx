@@ -1,27 +1,63 @@
-import { getData, getBalanceSheet, expensesAnnualTotal } from '../store.js';
-import { EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR } from '../constants.js';
+import {
+  getData, getBalanceSheet, expensesAnnualTotal, paidTotal, dueAmount, feeDeficit,
+} from '../store.js';
+import {
+  EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR, PAYMENT_STAGES,
+} from '../constants.js';
 import { exportCSV, exportWord } from '../utils/export.js';
 import {
-  DownloadIcon, PrintIcon, StudentsIcon, TeachersIcon, WalletIcon, ScaleIcon, ReportIcon,
+  DownloadIcon, PrintIcon, StudentsIcon, TeachersIcon, WalletIcon, ScaleIcon, ReportIcon, RupeeIcon,
 } from '../components/Icons.jsx';
 
 function studentRows(students, year) {
   const list = students.filter((s) => s.year === year);
   return [
-    ['Adm. No.', 'Name', 'Guardian', 'Class', 'Phone', 'Email', 'Address', 'Fee Assigned', 'Fee Paid', 'Balance'],
+    ['Adm. No.', 'Name', 'Guardian', 'Class', 'Combination', 'Language', 'Phone', 'Email', 'Address', 'Agreed Amount', 'Total Paid', 'Due Amount'],
     ...list.map((s) => [
       s.admissionNo,
       s.name,
       s.guardianName,
       s.className,
+      s.combination,
+      s.language,
       s.phone,
       s.email,
       s.address,
-      s.feeAssigned,
-      s.feePaid,
-      Number(s.feeAssigned || 0) - Number(s.feePaid || 0),
+      s.agreedAmount,
+      paidTotal(s),
+      dueAmount(s),
     ]),
   ];
+}
+
+// Column-for-column reproduction of the college's fee register sheet.
+function feeRegisterRows(students, year) {
+  const list = students.filter((s) => s.year === year);
+  const header = [
+    'Sl.#', 'Name', 'Class', 'Combination', 'Language',
+    'Actual Amount', 'Agreed Amount', 'Deficit',
+    'Fee Payment Date', 'Receipt #', 'Mode of Payment', 'Fee Paid at the Time of Admission',
+    '1st Instalment', 'Fee Payment Date', 'Receipt #', 'Mode of Payment',
+    '2nd Instalment', 'Fee Payment Date', 'Receipt #', 'Mode of Payment',
+    '3rd Instalment', 'Fee Payment Date', 'Receipt #', 'Mode of Payment',
+    'Grand Total', 'Due Amount', 'Remarks',
+  ];
+  const rows = list.map((s, i) => {
+    const p = (k) => s.payments?.[k] || {};
+    const adm = p('admission');
+    const insts = ['inst1', 'inst2', 'inst3'].flatMap((k) => {
+      const inst = p(k);
+      return [inst.amount, inst.date, inst.receipt, inst.mode];
+    });
+    return [
+      i + 1, s.name, s.className, s.combination, s.language,
+      s.actualAmount, s.agreedAmount, feeDeficit(s),
+      adm.date, adm.receipt, adm.mode, adm.amount,
+      ...insts,
+      paidTotal(s), dueAmount(s), s.remarks,
+    ];
+  });
+  return [header, ...rows];
 }
 
 function staffRows(staff) {
@@ -82,6 +118,16 @@ export default function Reports({ year }) {
         ]),
     },
     {
+      icon: RupeeIcon,
+      title: `Fee Register — ${year}`,
+      desc: 'The full fee register: actual/agreed/deficit, admission payment and all three instalments with dates, receipts and payment modes, grand total, due and remarks.',
+      csv: () => exportCSV(`fee-register-${year}.csv`, feeRegisterRows(students, year)),
+      word: () =>
+        exportWord(`fee-register-${year}.doc`, `Fee Register ${year}`, [
+          { rows: feeRegisterRows(students, year) },
+        ]),
+    },
+    {
       icon: TeachersIcon,
       title: 'Teachers & Staff Register',
       desc: 'All members with designation, subject, qualification and salary.',
@@ -116,6 +162,7 @@ export default function Reports({ year }) {
         exportWord(`annual-report-${year}.doc`, `Annual Report ${year}`, [
           { title: 'Balance Sheet', rows: balanceRows(sheet, expensesTotal) },
           { title: 'Monthly Expenses', rows: expenseRows(expenses, categories, year) },
+          { title: 'Fee Register', rows: feeRegisterRows(students, year) },
           { title: 'Student Register', rows: studentRows(students, year) },
           { title: 'Teachers & Staff Register', rows: staffRows(staff) },
         ]),

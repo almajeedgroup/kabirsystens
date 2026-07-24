@@ -8,7 +8,7 @@ College administration web app for **Kabir Independent PU College for Women**
 | Module | What it does |
 | --- | --- |
 | **Dashboard** | Overview of students, staff, fees received, expenses and annual deficit for the selected academic year |
-| **Students** | Admission register with search and class filter; every student has a full **profile page** (photo, guardian, contact, fee progress) |
+| **Students** | Admission register (Sl.#, class, combination, language, agreed/paid/due) with search and class filter; every student has a full **profile page** with the complete **fee register** — actual/agreed amount, deficit, admission payment and 1st/2nd/3rd instalments (amount, date, receipt #, mode of payment), grand total, due amount, remarks — plus payment analytics |
 | **Teachers & Staff** | Faculty register with designation, subject, qualification and salary; every member has a full **profile page** |
 | **Monthly Expenses** | 12 default expense categories (Salaries … Miscellaneous) plus **user-added custom categories**, across the June–May academic year, with automatic row/column/annual totals and a dashboard chart |
 | **Balance Sheet** | Per-year I PUC / II PUC actual amount, amount received and deficit, annual summary with expenses; can auto-fill from student fee records |
@@ -19,9 +19,10 @@ years (June through May, e.g. 2025-26).
 
 ## Design
 
-- **Primary colour:** Azure blue `#007FFF`
+- **Primary colour:** Azure blue `#3A6EA5` (midpoint between light blue and navy)
 - **Secondary colour:** Goldenrod `#DAA520`
 - **Text:** black and white only
+- Hairline borders and transparent (outline) buttons throughout
 
 ## Running
 

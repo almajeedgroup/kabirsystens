@@ -57,10 +57,10 @@ export default function TeacherProfile({ view, navigate }) {
           </div>
         </div>
         <div className="actions no-print">
-          <button className="btn gold" onClick={() => setEditing(true)}>
+          <button className="btn gold hero-btn" onClick={() => setEditing(true)}>
             <EditIcon size={16} /> Edit Profile
           </button>
-          <button className="btn ghost" onClick={remove}>
+          <button className="btn hero-btn" onClick={remove}>
             <TrashIcon size={16} /> Delete
           </button>
         </div>

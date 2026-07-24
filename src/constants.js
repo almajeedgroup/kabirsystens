@@ -28,6 +28,18 @@ export const EXPENSE_CATEGORIES = [
 
 export const CLASSES = ['I PUC', 'II PUC'];
 
+export const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque', 'Card', 'Other'];
+
+// Fee register stages: admission payment plus three instalments.
+export const PAYMENT_STAGES = [
+  { key: 'admission', label: 'At the Time of Admission', short: 'Admission' },
+  { key: 'inst1', label: '1st Instalment', short: '1st Inst.' },
+  { key: 'inst2', label: '2nd Instalment', short: '2nd Inst.' },
+  { key: 'inst3', label: '3rd Instalment', short: '3rd Inst.' },
+];
+
+export const EMPTY_PAYMENT = { amount: '', date: '', receipt: '', mode: '' };
+
 // Downscale an uploaded photo to a small JPEG data URL for localStorage.
 export function readPhoto(file) {
   return new Promise((resolve, reject) => {

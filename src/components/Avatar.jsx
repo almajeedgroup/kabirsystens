@@ -1,4 +1,4 @@
-const PALETTE_INDEX = ['#007FFF', '#0059B3', '#DAA520', '#0F4C81', '#3399FF'];
+const PALETTE_INDEX = ['#3A6EA5', '#24476B', '#DAA520', '#2C4E74', '#5B82AC'];
 
 export default function Avatar({ name = '', photo, size = 40 }) {
   const initials = name
