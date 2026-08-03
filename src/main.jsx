@@ -6,10 +6,16 @@ import '@fontsource/inter/latin-600.css';
 import '@fontsource/inter/latin-700.css';
 import '@fontsource/inter/latin-800.css';
 import App from './App.jsx';
+import { ToastProvider } from './components/Toast.jsx';
+import { ConfirmProvider } from './components/Confirm.jsx';
 import './styles.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <ToastProvider>
+      <ConfirmProvider>
+        <App />
+      </ConfirmProvider>
+    </ToastProvider>
   </React.StrictMode>
 );

@@ -1,4 +1,5 @@
 import { COLLEGE } from '../constants.js';
+import { getSettings } from '../store.js';
 
 function download(filename, blob) {
   const url = URL.createObjectURL(blob);
@@ -32,6 +33,11 @@ export function exportWord(filename, docTitle, sections) {
     return `<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
   };
 
+  const s = getSettings();
+  const name = (s.collegeName || COLLEGE.name).toUpperCase();
+  const unit = (s.unit || COLLEGE.unit).toUpperCase();
+  const contact = [s.address, s.phone, s.email].filter(Boolean).join('  ·  ');
+
   const html = `
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
 <head><meta charset="utf-8"><title>${docTitle}</title>
@@ -41,6 +47,7 @@ export function exportWord(filename, docTitle, sections) {
   .letterhead h1 { color: #3A6EA5; margin: 0; font-size: 22pt; }
   .letterhead .unit { color: #000; font-size: 10pt; margin: 2px 0; }
   .letterhead .sub { background: #DAA520; color: #000; display: inline-block; padding: 2px 14px; font-size: 11pt; font-weight: bold; }
+  .letterhead .contact { color: #000; font-size: 8.5pt; margin-top: 4px; }
   h2 { color: #3A6EA5; font-size: 14pt; border-left: 6px solid #DAA520; padding-left: 8px; }
   table { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
   th { background: #3A6EA5; color: #fff; padding: 6px 8px; border: 1px solid #000; font-size: 10pt; }
@@ -49,13 +56,14 @@ export function exportWord(filename, docTitle, sections) {
 </style></head>
 <body>
   <div class="letterhead">
-    <h1>${COLLEGE.name.toUpperCase()}</h1>
+    <h1>${name}</h1>
     <div class="sub">FOR WOMEN</div>
-    <div class="unit">${COLLEGE.unit.toUpperCase()}</div>
+    <div class="unit">${unit}</div>
+    ${contact ? `<div class="contact">${contact}</div>` : ''}
   </div>
   <h2>${docTitle}</h2>
   <p>Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-  ${sections.map((s) => `${s.title ? `<h2>${s.title}</h2>` : ''}${tableHTML(s.rows)}`).join('')}
+  ${sections.map((sec) => `${sec.title ? `<h2>${sec.title}</h2>` : ''}${tableHTML(sec.rows)}`).join('')}
   <div class="footer">Software by ${COLLEGE.developer}</div>
 </body></html>`;
 

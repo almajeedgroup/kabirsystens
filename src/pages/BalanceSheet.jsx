@@ -7,10 +7,14 @@ import {
 import { formatINR } from '../constants.js';
 import { collectionStatus, figClass } from '../utils/status.js';
 import { SyncIcon } from '../components/Icons.jsx';
+import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 
 export default function BalanceSheet({ year, embedded = false }) {
   const sheet = getBalanceSheet(year);
   const expenses = expensesAnnualTotal(year);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const iPucDeficit = Number(sheet.iPucActual) - Number(sheet.iPucReceived);
   const iiPucDeficit = Number(sheet.iiPucActual) - Number(sheet.iiPucReceived);
@@ -41,13 +45,15 @@ export default function BalanceSheet({ year, embedded = false }) {
         </div>
         <button
           className="btn gold no-print"
-          onClick={() => {
-            if (
-              window.confirm(
-                `Fill amounts from the ${year} student fee records? Manually entered values will be replaced.`
-              )
-            ) {
+          onClick={async () => {
+            const ok = await confirm({
+              title: 'Fill from student records?',
+              message: `Recalculate the ${year} balance sheet from student fee registers? Manually entered values will be replaced.`,
+              confirmLabel: 'Fill',
+            });
+            if (ok) {
               syncBalanceSheetFromStudents(year);
+              toast('Balance sheet filled from student records');
             }
           }}
         >

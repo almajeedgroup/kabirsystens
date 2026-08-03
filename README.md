@@ -11,6 +11,14 @@ College administration web app for **Kabir Independent PU College for Women**
 | **Students** | Admission register (Sl.#, class, combination, language, agreed/paid/due) with search and class filter; every student has a full **profile page** with the complete **fee register** — actual/agreed amount, deficit, admission payment and 1st/2nd/3rd instalments (amount, date, receipt #, mode of payment), grand total, due amount, remarks — plus payment analytics |
 | **Teachers & Staff** | Faculty register with designation, subject, qualification and salary; every member has a full **profile page** |
 | **Finance** | A single hub for everything financial, organised into four tabs (see below) |
+| **Settings** | Editable college identity (name, unit, address, phone, email, logo) that flows into the app header and every exported/printed letterhead |
+
+The Dashboard adds an **Outstanding Dues** list (students ranked by pending
+amount) and an **Expenses by Category** breakdown. Add / edit / delete actions
+give **toast** confirmations, and destructive actions use an on-brand confirm
+dialog. Students can be **sorted** by any column and **filtered by fee status**
+(cleared / partly paid / unpaid). All financial figures are colour-coded
+green / yellow / red for cleared / partial / unpaid.
 
 ### The Finance hub
 
@@ -21,7 +29,7 @@ All money-related work lives on one page, split into tabs:
 | **Overview** | Fees collected / due, expenses, salary outgo and net position at a glance, an expense-trend chart, class-wise fee-register progress and a balance-sheet snapshot |
 | **Monthly Expenses** | 12 default categories (Salaries … Miscellaneous) plus **user-added custom categories**, across the June–May academic year, with automatic row/column/annual totals |
 | **Balance Sheet** | Per-year I PUC / II PUC actual amount, amount received and deficit, annual summary with expenses; can auto-fill from student fee records |
-| **Import & Export** | Smart CSV **import** (auto-detects and allocates — see below), plus CSV / Word / print export of every register on the college letterhead |
+| **Import & Export** | Smart CSV **import** (auto-detects and allocates — see below), full **Backup & Restore** of the entire database as one JSON file, plus CSV / Word / print export of every register on the college letterhead |
 
 ### Smart CSV import
 

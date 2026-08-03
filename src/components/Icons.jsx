@@ -99,6 +99,10 @@ export const UserIcon = (p) => (
   <Icon {...p}><circle cx="12" cy="8" r="4" /><path d="M4.5 21c.8-4 3.9-6.2 7.5-6.2s6.7 2.2 7.5 6.2" /></Icon>
 );
 
+export const SettingsIcon = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="3.2" /><path d="M12 2.5v2.6M12 18.9v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M2.5 12h2.6M18.9 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9" /></Icon>
+);
+
 export const CalendarIcon = (p) => (
   <Icon {...p}><rect x="3.5" y="5" width="17" height="16" rx="2" /><path d="M3.5 10h17" /><path d="M8 3v4M16 3v4" /></Icon>
 );

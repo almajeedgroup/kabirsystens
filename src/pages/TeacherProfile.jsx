@@ -3,12 +3,16 @@ import { getData, deleteStaff } from '../store.js';
 import { formatINR } from '../constants.js';
 import Avatar from '../components/Avatar.jsx';
 import TeacherForm from '../components/TeacherForm.jsx';
+import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 import {
   BackIcon, EditIcon, TrashIcon, PhoneIcon, MailIcon, PinIcon, CalendarIcon, ReportIcon,
 } from '../components/Icons.jsx';
 
 export default function TeacherProfile({ view, navigate }) {
   const { staff } = getData();
+  const toast = useToast();
+  const confirm = useConfirm();
   const teacher = staff.find((s) => s.id === view.id);
   const [editing, setEditing] = useState(false);
 
@@ -24,9 +28,16 @@ export default function TeacherProfile({ view, navigate }) {
     );
   }
 
-  const remove = () => {
-    if (window.confirm(`Delete "${teacher.name}"? This cannot be undone.`)) {
+  const remove = async () => {
+    const ok = await confirm({
+      title: 'Delete member?',
+      message: `Delete "${teacher.name}" from the register? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (ok) {
       deleteStaff(teacher.id);
+      toast(`Deleted ${teacher.name}`);
       navigate('teachers');
     }
   };

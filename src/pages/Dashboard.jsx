@@ -1,6 +1,6 @@
-import { getData, expensesAnnualTotal, getBalanceSheet } from '../store.js';
+import { getData, expensesAnnualTotal, getBalanceSheet, paidTotal, dueAmount } from '../store.js';
 import { formatINR, MONTHS, monthLabel } from '../constants.js';
-import { collectionStatus, figClass } from '../utils/status.js';
+import { collectionStatus, dueStatus, figClass } from '../utils/status.js';
 import BarChart from '../components/BarChart.jsx';
 import Avatar from '../components/Avatar.jsx';
 import {
@@ -23,6 +23,19 @@ export default function Dashboard({ year, navigate }) {
   );
 
   const recentStudents = [...yearStudents].slice(-5).reverse();
+
+  // Students with outstanding dues, largest first.
+  const defaulters = yearStudents
+    .filter((s) => dueAmount(s) > 0)
+    .sort((a, b) => dueAmount(b) - dueAmount(a))
+    .slice(0, 6);
+
+  // Expense totals by category for the year, largest first.
+  const categoryTotals = Object.entries(yearExpenses)
+    .map(([cat, months]) => [cat, Object.values(months).reduce((a, b) => a + Number(b || 0), 0)])
+    .filter(([, total]) => total > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const maxCategory = categoryTotals[0]?.[1] || 1;
 
   const stats = [
     { icon: StudentsIcon, label: `Students · ${year}`, value: yearStudents.length, hint: `${yearStudents.filter((s) => s.className === 'I PUC').length} I PUC · ${yearStudents.filter((s) => s.className === 'II PUC').length} II PUC`, tone: '', status: '' },
@@ -150,9 +163,78 @@ export default function Dashboard({ year, navigate }) {
               </div>
               <div>
                 <div className="k">Deficit</div>
-                <div className="v">₹ {formatINR(annualDeficit)}</div>
+                <div className={`v ${figClass(collectionStatus(totalReceived, totalActual))}`}>₹ {formatINR(annualDeficit)}</div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="profile-grid">
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card-head">
+            <h3>Outstanding Dues — {year}</h3>
+            <button className="btn ghost small" onClick={() => navigate('students')}>All students</button>
+          </div>
+          <div className="card-body flush">
+            {defaulters.length === 0 ? (
+              <div className="empty-state">
+                <span className="icon"><RupeeIcon /></span>
+                <strong>No pending dues</strong>
+                <p>Every student for {year} is fully paid, or no fees are recorded yet.</p>
+              </div>
+            ) : (
+              <table>
+                <tbody>
+                  {defaulters.map((s) => (
+                    <tr key={s.id} className="clickable" onClick={() => navigate('studentProfile', { id: s.id })}>
+                      <td>
+                        <div className="person-cell">
+                          <Avatar name={s.name} photo={s.photo} size={34} />
+                          <div>
+                            <div className="cell-strong">{s.name}</div>
+                            <div className="meta">{s.className}{s.combination ? ` · ${s.combination}` : ''}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className={`num ${figClass(dueStatus(paidTotal(s), s.agreedAmount))}`} style={{ textAlign: 'right' }}>
+                        ₹ {formatINR(dueAmount(s))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card-head">
+            <h3>Expenses by Category — {year}</h3>
+            <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'expenses' })}>Expense sheet</button>
+          </div>
+          <div className="card-body">
+            {categoryTotals.length === 0 ? (
+              <div className="empty-state">
+                <span className="icon"><WalletIcon /></span>
+                <strong>No expenses yet</strong>
+                <p>Record spending on the Finance → Monthly Expenses tab.</p>
+              </div>
+            ) : (
+              <div className="cat-bars">
+                {categoryTotals.slice(0, 8).map(([cat, total]) => (
+                  <div className="cat-bar" key={cat}>
+                    <div className="cat-bar-head">
+                      <span>{cat}</span>
+                      <span className="cell-strong">₹ {formatINR(total)}</span>
+                    </div>
+                    <div className="cat-bar-track">
+                      <div className="cat-bar-fill" style={{ width: `${(total / maxCategory) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

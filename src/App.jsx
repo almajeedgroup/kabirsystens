@@ -1,9 +1,9 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { COLLEGE, academicYearOptions, currentAcademicYear } from './constants.js';
-import { subscribe, getData } from './store.js';
+import { subscribe, getData, getSettings } from './store.js';
 import Logo from './components/Logo.jsx';
 import {
-  HomeIcon, StudentsIcon, TeachersIcon, WalletIcon, CalendarIcon,
+  HomeIcon, StudentsIcon, TeachersIcon, WalletIcon, CalendarIcon, SettingsIcon,
 } from './components/Icons.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Students from './pages/Students.jsx';
@@ -11,6 +11,7 @@ import StudentProfile from './pages/StudentProfile.jsx';
 import Teachers from './pages/Teachers.jsx';
 import TeacherProfile from './pages/TeacherProfile.jsx';
 import Finance from './pages/Finance.jsx';
+import Settings from './pages/Settings.jsx';
 
 const NAV = [
   {
@@ -28,6 +29,10 @@ const NAV = [
     title: 'Finance',
     items: [{ id: 'finance', label: 'Finance', icon: WalletIcon }],
   },
+  {
+    title: 'System',
+    items: [{ id: 'settings', label: 'Settings', icon: SettingsIcon }],
+  },
 ];
 
 const TITLES = {
@@ -37,6 +42,7 @@ const TITLES = {
   teachers: 'Teachers & Staff',
   teacherProfile: 'Teacher Profile',
   finance: 'Finance',
+  settings: 'Settings',
 };
 
 // Profile pages highlight their parent list in the nav.
@@ -67,16 +73,25 @@ export default function App() {
     teachers: <Teachers {...pageProps} />,
     teacherProfile: <TeacherProfile {...pageProps} />,
     finance: <Finance {...pageProps} />,
+    settings: <Settings {...pageProps} />,
   }[view.page];
+
+  const settings = getSettings();
+  const collegeName = settings.collegeName || COLLEGE.name;
+  const collegeUnit = settings.unit || COLLEGE.unit;
 
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <Logo size={44} dark />
+          {settings.logo ? (
+            <img src={settings.logo} alt="" style={{ width: 44, height: 44, objectFit: 'contain' }} />
+          ) : (
+            <Logo size={44} dark />
+          )}
           <div className="brand-text">
-            <strong>{COLLEGE.name}</strong>
-            <small>{COLLEGE.unit}</small>
+            <strong>{collegeName}</strong>
+            <small>{collegeUnit}</small>
           </div>
         </div>
         <div className="brand-rule" />
@@ -97,7 +112,7 @@ export default function App() {
           </div>
         ))}
         <div className="sidebar-footer">
-          <strong>{COLLEGE.name}</strong>
+          <strong>{collegeName}</strong>
           <br />
           Software by {COLLEGE.developer}
         </div>
@@ -106,7 +121,7 @@ export default function App() {
       <div className="main">
         <header className="topbar">
           <div>
-            <div className="crumb">{COLLEGE.name}</div>
+            <div className="crumb">{collegeName}</div>
             <h1>{TITLES[view.page]}</h1>
           </div>
           <div className="topbar-right">
@@ -124,8 +139,8 @@ export default function App() {
 
         <main className="content">
           <div className="print-letterhead">
-            <h2 style={{ margin: 0 }}>{COLLEGE.name.toUpperCase()}</h2>
-            <div>{COLLEGE.unit.toUpperCase()}</div>
+            <h2 style={{ margin: 0 }}>{collegeName.toUpperCase()}</h2>
+            <div>{collegeUnit.toUpperCase()}</div>
           </div>
           {PAGE}
         </main>

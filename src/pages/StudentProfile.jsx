@@ -8,12 +8,16 @@ import { collectionStatus, dueStatus, figClass } from '../utils/status.js';
 import Avatar from '../components/Avatar.jsx';
 import StudentForm from '../components/StudentForm.jsx';
 import BarChart from '../components/BarChart.jsx';
+import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 import {
   BackIcon, EditIcon, TrashIcon, PhoneIcon, MailIcon, PinIcon, UserIcon, CalendarIcon, ReportIcon,
 } from '../components/Icons.jsx';
 
 export default function StudentProfile({ view, navigate }) {
   const { students } = getData();
+  const toast = useToast();
+  const confirm = useConfirm();
   const student = students.find((s) => s.id === view.id);
   const [editing, setEditing] = useState(false);
 
@@ -36,9 +40,16 @@ export default function StudentProfile({ view, navigate }) {
   const deficit = feeDeficit(student);
   const pct = agreed > 0 ? Math.min(100, (paid / agreed) * 100) : 0;
 
-  const remove = () => {
-    if (window.confirm(`Delete student "${student.name}"? This cannot be undone.`)) {
+  const remove = async () => {
+    const ok = await confirm({
+      title: 'Delete student?',
+      message: `Delete "${student.name}" and their fee register? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (ok) {
       deleteStudent(student.id);
+      toast(`Deleted ${student.name}`);
       navigate('students');
     }
   };

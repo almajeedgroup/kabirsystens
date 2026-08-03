@@ -3,9 +3,13 @@ import { getData, setExpense, getExpense, addCategory, removeCategory } from '..
 import { EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR } from '../constants.js';
 import { PlusIcon, TrashIcon } from '../components/Icons.jsx';
 import Modal from '../components/Modal.jsx';
+import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 
 export default function Expenses({ year, embedded = false }) {
   const { expenses, customCategories } = getData();
+  const toast = useToast();
+  const confirm = useConfirm();
   const yearData = expenses[year] || {};
   const [adding, setAdding] = useState(false);
   const [newCat, setNewCat] = useState('');
@@ -23,17 +27,25 @@ export default function Expenses({ year, embedded = false }) {
     const name = newCat.trim();
     if (!name) return;
     if (categories.some((c) => c.toLowerCase() === name.toLowerCase())) {
-      window.alert(`The category "${name}" already exists.`);
+      toast(`The category "${name}" already exists`, 'error');
       return;
     }
     addCategory(name);
     setNewCat('');
     setAdding(false);
+    toast(`Added category "${name}"`);
   };
 
-  const dropCategory = (cat) => {
-    if (window.confirm(`Remove the category "${cat}"? Its recorded amounts in every year will be deleted.`)) {
+  const dropCategory = async (cat) => {
+    const ok = await confirm({
+      title: 'Remove category?',
+      message: `Remove "${cat}"? Its recorded amounts in every academic year will be deleted.`,
+      confirmLabel: 'Remove',
+      danger: true,
+    });
+    if (ok) {
       removeCategory(cat);
+      toast(`Removed category "${cat}"`);
     }
   };
 

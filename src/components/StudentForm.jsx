@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal.jsx';
 import { CLASSES, readPhoto, formatINR } from '../constants.js';
 import { addStudent, updateStudent } from '../store.js';
+import { useToast } from './Toast.jsx';
 
 const EMPTY = {
   admissionNo: '',
@@ -21,6 +22,7 @@ const EMPTY = {
 };
 
 export default function StudentForm({ student, year, onClose }) {
+  const toast = useToast();
   const [form, setForm] = useState(student ? { ...EMPTY, ...student } : EMPTY);
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -34,8 +36,10 @@ export default function StudentForm({ student, year, onClose }) {
     if (!form.name.trim()) return;
     if (student) {
       updateStudent(student.id, form);
+      toast(`Saved ${form.name}`);
     } else {
       addStudent({ ...form, year });
+      toast(`Admitted ${form.name}`);
     }
     onClose();
   };

@@ -6,6 +6,15 @@
 
 const STORAGE_KEY = 'kabir_college_admin_v1';
 
+const DEFAULT_SETTINGS = {
+  collegeName: 'Kabir Ind PU College for Women',
+  unit: 'A Unit of Islamic Information Centre',
+  address: '',
+  phone: '',
+  email: '',
+  logo: '', // optional uploaded logo (data URL); falls back to the built-in emblem
+};
+
 const DEFAULT_DATA = {
   students: [],   // {id, admissionNo, name, guardianName, className, combination, language, phone, email,
                   //  address, dob, year, actualAmount, agreedAmount, remarks, photo,
@@ -14,6 +23,7 @@ const DEFAULT_DATA = {
   expenses: {},   // { [year]: { [category]: { [monthIndex]: amount } } }
   balanceSheets: {}, // { [year]: { iPucActual, iPucReceived, iiPucActual, iiPucReceived } }
   customCategories: [], // user-added expense categories beyond the defaults
+  settings: { ...DEFAULT_SETTINGS },
 };
 
 const EMPTY_PAYMENTS = {
@@ -45,6 +55,7 @@ function load() {
     if (!raw) return structuredClone(DEFAULT_DATA);
     const parsed = { ...structuredClone(DEFAULT_DATA), ...JSON.parse(raw) };
     parsed.students = parsed.students.map(migrateStudent);
+    parsed.settings = { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) };
     return parsed;
   } catch {
     return structuredClone(DEFAULT_DATA);
@@ -101,6 +112,52 @@ export function getData() {
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ---- Settings ----
+export function getSettings() {
+  return data.settings || { ...DEFAULT_SETTINGS };
+}
+
+export function updateSettings(patch) {
+  data.settings = { ...getSettings(), ...patch };
+  notify();
+}
+
+// ---- Backup & restore (whole database) ----
+export function exportAllData() {
+  return {
+    app: 'kabir-college-admin',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: {
+      students: data.students,
+      staff: data.staff,
+      expenses: data.expenses,
+      balanceSheets: data.balanceSheets,
+      customCategories: data.customCategories,
+      settings: data.settings,
+    },
+  };
+}
+
+// Replace the entire database from a backup file. Returns a short summary.
+export function importAllData(backup) {
+  const payload = backup && backup.data ? backup.data : backup;
+  if (!payload || !Array.isArray(payload.students)) {
+    throw new Error('This file is not a valid backup of this system.');
+  }
+  data = {
+    ...structuredClone(DEFAULT_DATA),
+    ...payload,
+    settings: { ...DEFAULT_SETTINGS, ...(payload.settings || {}) },
+  };
+  data.students = data.students.map(migrateStudent);
+  notify();
+  return {
+    students: data.students.length,
+    staff: data.staff.length,
+  };
 }
 
 // ---- Students ----

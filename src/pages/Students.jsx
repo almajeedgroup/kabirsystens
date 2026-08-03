@@ -4,18 +4,43 @@ import { CLASSES, formatINR } from '../constants.js';
 import Avatar from '../components/Avatar.jsx';
 import StudentForm from '../components/StudentForm.jsx';
 import StatusLegend from '../components/StatusLegend.jsx';
+import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 import { dueStatus, collectionStatus, figClass } from '../utils/status.js';
 import { PlusIcon, SearchIcon, EditIcon, TrashIcon, StudentsIcon } from '../components/Icons.jsx';
 
+// Fee status buckets for the filter.
+function feeBucket(s) {
+  const paid = paidTotal(s);
+  const agreed = Number(s.agreedAmount || 0);
+  if (agreed > 0 && paid >= agreed) return 'cleared';
+  if (paid <= 0) return 'unpaid';
+  return 'partial';
+}
+
+const SORTS = {
+  sl: null,
+  name: (a, b) => a.name.localeCompare(b.name),
+  className: (a, b) => a.className.localeCompare(b.className),
+  agreed: (a, b) => Number(a.agreedAmount || 0) - Number(b.agreedAmount || 0),
+  paid: (a, b) => paidTotal(a) - paidTotal(b),
+  due: (a, b) => dueAmount(a) - dueAmount(b),
+};
+
 export default function Students({ year, navigate }) {
   const { students } = getData();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [modal, setModal] = useState(null); // null | 'new' | student object
   const [filterClass, setFilterClass] = useState('All');
+  const [filterFee, setFilterFee] = useState('All');
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState({ key: 'sl', dir: 1 });
 
   const yearList = students.filter((s) => s.year === year);
-  const list = yearList
+  let list = yearList
     .filter((s) => filterClass === 'All' || s.className === filterClass)
+    .filter((s) => filterFee === 'All' || feeBucket(s) === filterFee)
     .filter(
       (s) =>
         !search ||
@@ -24,15 +49,30 @@ export default function Students({ year, navigate }) {
         (s.combination || '').toLowerCase().includes(search.toLowerCase())
     );
 
+  if (SORTS[sort.key]) {
+    list = [...list].sort((a, b) => SORTS[sort.key](a, b) * sort.dir);
+  }
+
+  const toggleSort = (key) =>
+    setSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: 1 }));
+  const sortMark = (key) => (sort.key === key ? (sort.dir === 1 ? ' ▲' : ' ▼') : '');
+
   const totalAgreed = list.reduce((a, s) => a + Number(s.agreedAmount || 0), 0);
   const totalPaid = list.reduce((a, s) => a + paidTotal(s), 0);
   const totalDue = list.reduce((a, s) => a + dueAmount(s), 0);
   const pctCollected = totalAgreed > 0 ? Math.min(100, (totalPaid / totalAgreed) * 100) : 0;
 
-  const remove = (e, s) => {
+  const remove = async (e, s) => {
     e.stopPropagation();
-    if (window.confirm(`Delete student "${s.name}"? This cannot be undone.`)) {
+    const ok = await confirm({
+      title: 'Delete student?',
+      message: `Delete "${s.name}" and their fee register? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (ok) {
       deleteStudent(s.id);
+      toast(`Deleted ${s.name}`);
     }
   };
 
@@ -91,8 +131,14 @@ export default function Students({ year, navigate }) {
             />
           </div>
           <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} aria-label="Filter by class">
-            <option>All</option>
+            <option value="All">All classes</option>
             {CLASSES.map((c) => <option key={c}>{c}</option>)}
+          </select>
+          <select value={filterFee} onChange={(e) => setFilterFee(e.target.value)} aria-label="Filter by fee status">
+            <option value="All">All fees</option>
+            <option value="cleared">Cleared</option>
+            <option value="partial">Partly paid</option>
+            <option value="unpaid">Unpaid</option>
           </select>
           <StatusLegend />
           <span style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--ink-50)' }}>
@@ -112,13 +158,13 @@ export default function Students({ year, navigate }) {
               <thead>
                 <tr>
                   <th scope="col">Sl.#</th>
-                  <th scope="col">Student</th>
-                  <th scope="col">Class</th>
+                  <th scope="col"><button className="th-sort" onClick={() => toggleSort('name')}>Student{sortMark('name')}</button></th>
+                  <th scope="col"><button className="th-sort" onClick={() => toggleSort('className')}>Class{sortMark('className')}</button></th>
                   <th scope="col">Combination</th>
                   <th scope="col">Language</th>
-                  <th scope="col" className="num">Agreed (₹)</th>
-                  <th scope="col" className="num">Paid (₹)</th>
-                  <th scope="col" className="num">Due (₹)</th>
+                  <th scope="col" className="num"><button className="th-sort" onClick={() => toggleSort('agreed')}>Agreed (₹){sortMark('agreed')}</button></th>
+                  <th scope="col" className="num"><button className="th-sort" onClick={() => toggleSort('paid')}>Paid (₹){sortMark('paid')}</button></th>
+                  <th scope="col" className="num"><button className="th-sort" onClick={() => toggleSort('due')}>Due (₹){sortMark('due')}</button></th>
                   <th scope="col" className="no-print" aria-label="Actions" />
                 </tr>
               </thead>

@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
 import {
   getData, getBalanceSheet, setBalanceSheet, expensesAnnualTotal, paidTotal, dueAmount, feeDeficit,
-  importStudents, importStaffMembers, importExpenses,
+  importStudents, importStaffMembers, importExpenses, exportAllData, importAllData,
 } from '../store.js';
 import { parseCSV, detectDomain, mapRows } from '../utils/csv.js';
 import Modal from '../components/Modal.jsx';
+import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 import {
   EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR, PAYMENT_STAGES,
 } from '../constants.js';
@@ -109,12 +111,49 @@ export default function ImportExport({ year }) {
   const categories = [...EXPENSE_CATEGORIES, ...customCategories];
   const sheet = getBalanceSheet(year);
   const expensesTotal = expensesAnnualTotal(year);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   // ---- Import state ----
   const [preview, setPreview] = useState(null); // {detection, mapped, fileName}
   const [importError, setImportError] = useState('');
   const [importResult, setImportResult] = useState('');
   const fileRef = useRef(null);
+  const backupRef = useRef(null);
+
+  // ---- Full backup & restore ----
+  const downloadBackup = () => {
+    const blob = new Blob([JSON.stringify(exportAllData(), null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kabir-college-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup downloaded');
+  };
+
+  const onRestore = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const ok = await confirm({
+      title: 'Restore from backup?',
+      message: 'This replaces ALL current data — students, teachers, expenses, balance sheets and settings — with the contents of the backup file. Consider downloading a backup of the current data first.',
+      confirmLabel: 'Restore',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const { students: sc, staff: tc } = importAllData(parsed);
+      toast(`Restored ${sc} students and ${tc} staff`);
+    } catch (err) {
+      toast(err.message || 'Could not read this backup file', 'error');
+    }
+  };
 
   const onFile = async (e) => {
     const file = e.target.files?.[0];
@@ -162,6 +201,7 @@ export default function ImportExport({ year }) {
     }
     setPreview(null);
     setImportResult(msg);
+    toast(msg, 'success');
   };
 
   const items = [
@@ -267,6 +307,40 @@ export default function ImportExport({ year }) {
               are created automatically).
             </p>
           )}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-head">
+          <div>
+            <h3>Backup &amp; Restore</h3>
+            <div className="sub">
+              Save a complete backup of everything in the system as a single file, and restore it
+              on any device. Keep regular backups — data lives in this browser until Firebase is connected.
+            </div>
+          </div>
+          <div className="btn-row">
+            <button className="btn ghost" onClick={downloadBackup}>
+              <DownloadIcon size={16} /> Download Backup
+            </button>
+            <button className="btn" onClick={() => backupRef.current?.click()}>
+              <UploadIcon size={16} /> Restore Backup
+            </button>
+            <input
+              ref={backupRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={onRestore}
+              style={{ display: 'none' }}
+              aria-label="Restore backup file"
+            />
+          </div>
+        </div>
+        <div className="card-body">
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--ink-50)' }}>
+            The backup includes every student, teacher, expense, balance sheet and your college
+            settings. Restoring replaces all current data.
+          </p>
         </div>
       </div>
 

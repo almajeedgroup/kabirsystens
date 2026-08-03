@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal.jsx';
 import { readPhoto } from '../constants.js';
 import { addStaff, updateStaff } from '../store.js';
+import { useToast } from './Toast.jsx';
 
 const EMPTY = {
   name: '',
@@ -17,6 +18,7 @@ const EMPTY = {
 };
 
 export default function TeacherForm({ teacher, onClose }) {
+  const toast = useToast();
   const [form, setForm] = useState(teacher ? { ...EMPTY, ...teacher } : EMPTY);
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -30,8 +32,10 @@ export default function TeacherForm({ teacher, onClose }) {
     if (!form.name.trim()) return;
     if (teacher) {
       updateStaff(teacher.id, form);
+      toast(`Saved ${form.name}`);
     } else {
       addStaff(form);
+      toast(`Added ${form.name}`);
     }
     onClose();
   };

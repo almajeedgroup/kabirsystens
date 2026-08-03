@@ -3,10 +3,14 @@ import { getData, deleteStaff } from '../store.js';
 import { formatINR } from '../constants.js';
 import Avatar from '../components/Avatar.jsx';
 import TeacherForm from '../components/TeacherForm.jsx';
+import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 import { PlusIcon, SearchIcon, EditIcon, TrashIcon, TeachersIcon } from '../components/Icons.jsx';
 
 export default function Teachers({ navigate }) {
   const { staff } = getData();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [modal, setModal] = useState(null); // null | 'new' | teacher object
   const [search, setSearch] = useState('');
 
@@ -20,10 +24,17 @@ export default function Teachers({ navigate }) {
 
   const totalSalary = list.reduce((a, s) => a + Number(s.salary || 0), 0);
 
-  const remove = (e, s) => {
+  const remove = async (e, s) => {
     e.stopPropagation();
-    if (window.confirm(`Delete "${s.name}"? This cannot be undone.`)) {
+    const ok = await confirm({
+      title: 'Delete member?',
+      message: `Delete "${s.name}" from the register? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (ok) {
       deleteStaff(s.id);
+      toast(`Deleted ${s.name}`);
     }
   };
 
