@@ -5,9 +5,11 @@ import {
 import { formatINR, MONTHS, monthLabel } from '../constants.js';
 import { collectionStatus, dueStatus, figClass } from '../utils/status.js';
 import { buildSampleData } from '../utils/sampleData.js';
-import BarChart from '../components/BarChart.jsx';
+import LineChart from '../components/LineChart.jsx';
 import Avatar from '../components/Avatar.jsx';
+import CardActions from '../components/CardActions.jsx';
 import { useToast } from '../components/Toast.jsx';
+import { exportCSV } from '../utils/export.js';
 import {
   StudentsIcon, TeachersIcon, RupeeIcon, WalletIcon, ScaleIcon, PlusIcon,
 } from '../components/Icons.jsx';
@@ -45,12 +47,11 @@ export default function Dashboard({ year, navigate }) {
     .sort((a, b) => b[1] - a[1]);
   const maxCategory = categoryTotals[0]?.[1] || 1;
 
-  const stats = [
-    { icon: StudentsIcon, label: `Students · ${year}`, value: yearStudents.length, hint: `${yearStudents.filter((s) => s.className === 'I PUC').length} I PUC · ${yearStudents.filter((s) => s.className === 'II PUC').length} II PUC`, tone: '', status: '' },
-    { icon: TeachersIcon, label: 'Teachers & Staff', value: staff.length, hint: 'Across the college', tone: '', status: '' },
-    { icon: RupeeIcon, label: 'Fees Received', value: `₹ ${formatINR(totalReceived)}`, hint: `of ₹ ${formatINR(totalActual)} assigned`, tone: 'gold', status: collectionStatus(totalReceived, totalActual) },
-    { icon: WalletIcon, label: 'Total Expenses', value: `₹ ${formatINR(totalExpenses)}`, hint: `Academic year ${year}`, tone: 'gold', status: '' },
-    { icon: ScaleIcon, label: 'Annual Fee Deficit', value: `₹ ${formatINR(annualDeficit)}`, hint: 'Assigned − received', tone: 'deep', status: collectionStatus(totalReceived, totalActual) },
+  const kpis = [
+    { icon: StudentsIcon, tone: 'purple', label: `Students · ${year}`, value: yearStudents.length, hint: `${yearStudents.filter((s) => s.className === 'I PUC').length} I PUC · ${yearStudents.filter((s) => s.className === 'II PUC').length} II PUC` },
+    { icon: RupeeIcon, tone: 'pink', label: 'Fees Received', value: `₹ ${formatINR(totalReceived)}`, hint: `of ₹ ${formatINR(totalActual)} assigned` },
+    { icon: TeachersIcon, tone: 'indigo', label: 'Teachers & Staff', value: staff.length, hint: 'Across the college' },
+    { icon: WalletIcon, tone: 'orange', label: 'Total Expenses', value: `₹ ${formatINR(totalExpenses)}`, hint: `Academic year ${year}` },
   ];
 
   if (showOnboarding) {
@@ -100,14 +101,14 @@ export default function Dashboard({ year, navigate }) {
         </div>
       </div>
 
-      <div className="stat-grid">
-        {stats.map(({ icon: StatIcon, label, value, hint, tone, status }) => (
-          <div className="stat-card" key={label}>
-            <span className={`stat-icon ${tone}`}><StatIcon /></span>
+      <div className="kpi-grid">
+        {kpis.map(({ icon: KpiIcon, tone, label, value, hint }) => (
+          <div className={`kpi-card ${tone}`} key={label}>
+            <span className="kpi-icon"><KpiIcon size={26} /></span>
             <div>
-              <div className="label">{label}</div>
-              <div className={`value ${figClass(status)}`}>{value}</div>
-              <div className="hint">{hint}</div>
+              <div className="kpi-label">{label}</div>
+              <div className="kpi-value">{value}</div>
+              <div className="kpi-hint">{hint}</div>
             </div>
           </div>
         ))}
@@ -116,17 +117,23 @@ export default function Dashboard({ year, navigate }) {
       <div className="card">
         <div className="card-head">
           <div>
-            <h3>Monthly Expenses</h3>
-            <div className="sub">Total spend per month, June {year.slice(0, 4)} – May. Full breakdown in Monthly Expenses.</div>
+            <h3>Expense Overview</h3>
+            <div className="sub">Total spend per month, June {year.slice(0, 4)} – May {String(Number(year.slice(0, 4)) + 1).slice(2)}.</div>
           </div>
-          <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'expenses' })}>
-            Open expense sheet
-          </button>
+          <CardActions
+            onRefresh={() => toast('Dashboard refreshed')}
+            onDownload={() =>
+              exportCSV(`monthly-expense-trend-${year}.csv`, [
+                ['Month', 'Total (₹)'],
+                ...MONTHS.map((_, mi) => [monthLabel(year, mi), monthTotals[mi]]),
+              ])
+            }
+          />
         </div>
         <div className="card-body">
-          <BarChart
+          <LineChart
             labels={MONTHS.map((_, mi) => monthLabel(year, mi))}
-            values={monthTotals}
+            series={[{ name: 'Expenses', color: '#7c3aed', values: monthTotals }]}
           />
         </div>
       </div>

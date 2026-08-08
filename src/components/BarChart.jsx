@@ -71,7 +71,7 @@ export default function BarChart({ labels, values, height = 220 }) {
                       L${x(i) + barW - 4},${y(v)}
                       Q${x(i) + barW},${y(v)} ${x(i) + barW},${y(v) + 4}
                       L${x(i) + barW},${pad.top + plotH} Z`}
-                  fill={active ? '#24476B' : '#3A6EA5'}
+                  fill={active ? '#6d28d9' : '#7c3aed'}
                   style={{ pointerEvents: 'none' }}
                 />
               )}

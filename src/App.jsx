@@ -7,9 +7,11 @@ import {
 import { watchAuth, signOutUser } from './firebase.js';
 import Logo from './components/Logo.jsx';
 import Login from './components/Login.jsx';
+import Avatar from './components/Avatar.jsx';
 import { useToast } from './components/Toast.jsx';
 import {
   HomeIcon, StudentsIcon, TeachersIcon, WalletIcon, CalendarIcon, SettingsIcon, LogoutIcon,
+  SearchIcon, WrenchIcon, DownloadIcon, MenuIcon,
 } from './components/Icons.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Students from './pages/Students.jsx';
@@ -91,6 +93,9 @@ export default function App() {
     });
   }, [toast]);
 
+  // Global search across students and teachers.
+  const [query, setQuery] = useState('');
+
   const signOut = async () => {
     await signOutUser();
     setView({ page: 'dashboard' });
@@ -98,8 +103,23 @@ export default function App() {
 
   const navigate = (page, params = {}) => {
     setView({ page, ...params });
+    setQuery('');
     window.scrollTo({ top: 0 });
   };
+
+  const q = query.trim().toLowerCase();
+  const results = q
+    ? [
+        ...getData().students
+          .filter((s) => s.name.toLowerCase().includes(q) || (s.admissionNo || '').toLowerCase().includes(q))
+          .slice(0, 6)
+          .map((s) => ({ type: 'student', id: s.id, name: s.name, meta: `${s.className}${s.admissionNo ? ` · ${s.admissionNo}` : ''}`, photo: s.photo })),
+        ...getData().staff
+          .filter((s) => s.name.toLowerCase().includes(q) || (s.designation || '').toLowerCase().includes(q))
+          .slice(0, 4)
+          .map((s) => ({ type: 'teacher', id: s.id, name: s.name, meta: s.designation || 'Staff', photo: s.photo })),
+      ]
+    : [];
 
   if (authPhase === 'loading') {
     return (
@@ -173,13 +193,44 @@ export default function App() {
 
       <div className="main">
         <header className="topbar">
-          <div>
-            <div className="crumb">{collegeName}</div>
-            <h1>{TITLES[view.page]}</h1>
+          <div className="topbar-search">
+            <SearchIcon size={18} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search students or staff…"
+              aria-label="Global search"
+            />
+            {!query && <span className="kbd">⌘ /</span>}
+            {query && (
+              <div className="gs-results">
+                {results.length === 0 ? (
+                  <div className="gs-empty">No matches for “{query}”.</div>
+                ) : (
+                  results.map((r) => (
+                    <button
+                      key={`${r.type}-${r.id}`}
+                      className="gs-item"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() =>
+                        navigate(r.type === 'student' ? 'studentProfile' : 'teacherProfile', { id: r.id })
+                      }
+                    >
+                      <Avatar name={r.name} photo={r.photo} size={30} />
+                      <span>
+                        <span className="cell-strong">{r.name}</span>
+                        <span className="meta"> · {r.meta}</span>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
+
           <div className="topbar-right">
             <div className="year-picker">
-              <CalendarIcon size={16} />
+              <CalendarIcon size={15} />
               <label htmlFor="year-select">Academic Year</label>
               <select id="year-select" value={year} onChange={(e) => setYear(e.target.value)}>
                 {academicYearOptions().map((y) => (
@@ -187,11 +238,21 @@ export default function App() {
                 ))}
               </select>
             </div>
+            <button className="top-icon" onClick={() => navigate('settings')} aria-label="Settings" title="Settings">
+              <SettingsIcon size={18} />
+            </button>
+            <button className="top-icon" onClick={() => navigate('finance', { tab: 'importexport' })} aria-label="Import & Export" title="Import & Export">
+              <DownloadIcon size={18} />
+            </button>
+            <button className="top-icon" onClick={() => navigate('finance')} aria-label="Finance" title="Finance">
+              <WrenchIcon size={18} />
+            </button>
             {firebaseAvailable && (
-              <button className="btn ghost small" onClick={signOut} title="Sign out">
-                <LogoutIcon size={16} /> Sign out
+              <button className="top-icon" onClick={signOut} aria-label="Sign out" title="Sign out">
+                <LogoutIcon size={18} />
               </button>
             )}
+            <span className="top-avatar"><Avatar name={collegeName} photo={settings.logo} size={42} /></span>
           </div>
         </header>
 

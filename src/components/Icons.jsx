@@ -107,6 +107,18 @@ export const SettingsIcon = (p) => (
   <Icon {...p}><circle cx="12" cy="12" r="3.2" /><path d="M12 2.5v2.6M12 18.9v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M2.5 12h2.6M18.9 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9" /></Icon>
 );
 
+export const MoreIcon = (p) => (
+  <Icon {...p}><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></Icon>
+);
+
+export const MenuIcon = (p) => (
+  <Icon {...p}><path d="M4 7h16M4 12h16M4 17h16" /></Icon>
+);
+
+export const WrenchIcon = (p) => (
+  <Icon {...p}><path d="M15.5 7.5a3.5 3.5 0 0 1-4.6 3.32l-5.1 5.1a1.8 1.8 0 1 0 2.55 2.55l5.1-5.1A3.5 3.5 0 1 0 15.5 7.5Z" /></Icon>
+);
+
 export const CalendarIcon = (p) => (
   <Icon {...p}><rect x="3.5" y="5" width="17" height="16" rx="2" /><path d="M3.5 10h17" /><path d="M8 3v4M16 3v4" /></Icon>
 );
