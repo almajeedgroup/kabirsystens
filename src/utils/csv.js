@@ -145,17 +145,22 @@ export function mapRows(rows, detection) {
 
   if (detection.type === 'staff') {
     return body
-      .map((row) => ({
-        name: val(row, idx('name', 'staffname', 'teachername')),
-        designation: val(row, idx('designation')),
-        subject: val(row, idx('subject')),
-        qualification: val(row, idx('qualification')),
-        phone: val(row, idx('phone', 'mobile', 'contact', 'phoneno')),
-        email: val(row, idx('email')),
-        address: val(row, idx('address')),
-        salary: val(row, idx('salary', 'monthlysalary')).replace(/[^0-9.]/g, ''),
-        joinDate: val(row, idx('joindate', 'joiningdate', 'joined')),
-      }))
+      .map((row) => {
+        const statusRaw = val(row, idx('status')).toLowerCase();
+        return {
+          name: val(row, idx('name', 'staffname', 'teachername')),
+          designation: val(row, idx('designation')),
+          subject: val(row, idx('subject')),
+          qualification: val(row, idx('qualification')),
+          phone: val(row, idx('phone', 'mobile', 'contact', 'phoneno')),
+          email: val(row, idx('email')),
+          address: val(row, idx('address')),
+          salary: val(row, idx('salary', 'monthlysalary')).replace(/[^0-9.]/g, ''),
+          joinDate: val(row, idx('joindate', 'joiningdate', 'joined')),
+          status: statusRaw.startsWith('left') || statusRaw === 'inactive' ? 'left' : 'active',
+          exitDate: val(row, idx('dateofleaving', 'exitdate', 'leavingdate', 'dateofexit')),
+        };
+      })
       .filter((r) => r.name);
   }
 

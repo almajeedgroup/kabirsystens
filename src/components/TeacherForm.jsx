@@ -14,6 +14,8 @@ const EMPTY = {
   address: '',
   salary: '',
   joinDate: '',
+  status: 'active', // 'active' | 'left'
+  exitDate: '',
   photo: '',
 };
 
@@ -80,6 +82,19 @@ export default function TeacherForm({ teacher, onClose }) {
             Joining Date
             <input type="date" value={form.joinDate} onChange={set('joinDate')} />
           </label>
+          <label className="field">
+            Status
+            <select value={form.status || 'active'} onChange={set('status')}>
+              <option value="active">Active</option>
+              <option value="left">Left</option>
+            </select>
+          </label>
+          {form.status === 'left' && (
+            <label className="field">
+              Date of Leaving
+              <input type="date" value={form.exitDate} onChange={set('exitDate')} />
+            </label>
+          )}
           <label className="field">
             Photo
             <input type="file" accept="image/*" onChange={onPhoto} />

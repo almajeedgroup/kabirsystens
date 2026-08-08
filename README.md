@@ -9,7 +9,7 @@ College administration web app for **Kabir Independent PU College for Women**
 | --- | --- |
 | **Dashboard** | Overview of students, staff, fees received, expenses and annual deficit for the selected academic year |
 | **Students** | Admission register (Sl.#, class, combination, language, agreed/paid/due) with search and class filter; every student has a full **profile page** with the complete **fee register** — actual/agreed amount, deficit, admission payment and 1st/2nd/3rd instalments (amount, date, receipt #, mode of payment), grand total, due amount, remarks — plus payment analytics |
-| **Teachers & Staff** | Faculty register with designation, subject, qualification and salary; every member has a full **profile page** |
+| **Teachers & Staff** | Faculty register with designation, subject, qualification and salary; every member has a full **profile page**. Tracks active vs left members with a date of leaving and shows an **attrition rate** (leavers ÷ everyone ever on roll), plus active-only salary totals |
 | **Finance** | A single hub for everything financial, organised into four tabs (see below) |
 | **Settings** | Editable college identity (name, unit, address, phone, email, logo) that flows into the app header and every exported/printed letterhead |
 

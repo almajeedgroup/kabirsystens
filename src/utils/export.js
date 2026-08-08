@@ -1,16 +1,33 @@
 import { COLLEGE } from '../constants.js';
 import { getSettings } from '../store.js';
 
-function download(filename, blob) {
+// Trigger a file download for a Blob. Robust across browsers:
+//  - revokes the object URL on a delay (revoking immediately cancels the
+//    download in Chromium/WebKit — this was the "nothing downloads" bug);
+//  - falls back to opening the content in a new tab when the anchor's
+//    download attribute is unsupported or blocked (e.g. sandboxed frames).
+export function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  const supportsDownload = 'download' in a;
   a.href = url;
   a.download = filename;
+  a.rel = 'noopener';
+  a.target = '_blank';
+  a.style.display = 'none';
   document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  try {
+    a.click();
+  } catch {
+    if (!supportsDownload) window.open(url, '_blank');
+  }
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 10000);
 }
+
+const download = downloadBlob;
 
 // rows: array of arrays; first row is the header.
 export function exportCSV(filename, rows) {

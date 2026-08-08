@@ -65,6 +65,9 @@ export default function TeacherProfile({ view, navigate }) {
           <div className="tags">
             {teacher.designation && <span className="badge gold">{teacher.designation}</span>}
             {teacher.subject && <span className="badge solid">{teacher.subject}</span>}
+            {(teacher.status || 'active') === 'left' && (
+              <span className="badge hero-badge">Left{teacher.exitDate ? ` · ${teacher.exitDate}` : ''}</span>
+            )}
           </div>
         </div>
         <div className="actions no-print">

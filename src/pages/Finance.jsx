@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getData, expensesAnnualTotal, getBalanceSheet, paidTotal, dueAmount } from '../store.js';
 import { formatINR, MONTHS, monthLabel } from '../constants.js';
 import { collectionStatus, dueStatus, signStatus, figClass } from '../utils/status.js';
+import { isActive, attritionStats } from '../utils/attrition.js';
 import BarChart from '../components/BarChart.jsx';
 import Expenses from './Expenses.jsx';
 import BalanceSheet from './BalanceSheet.jsx';
@@ -24,7 +25,9 @@ function Overview({ year, setTab }) {
   const collected = yearStudents.reduce((a, s) => a + paidTotal(s), 0);
   const due = yearStudents.reduce((a, s) => a + dueAmount(s), 0);
   const totalExpenses = expensesAnnualTotal(year);
-  const salaryOutgo = staff.reduce((a, s) => a + Number(s.salary || 0), 0);
+  const activeStaff = staff.filter(isActive);
+  const salaryOutgo = activeStaff.reduce((a, s) => a + Number(s.salary || 0), 0);
+  const attr = attritionStats(staff, year);
   const net = collected - totalExpenses;
 
   const yearExpenses = expenses[year] || {};
@@ -39,7 +42,7 @@ function Overview({ year, setTab }) {
     { icon: RupeeIcon, label: `Fees Collected · ${year}`, value: `₹ ${formatINR(collected)}`, hint: `of ₹ ${formatINR(agreed)} agreed`, tone: '', status: collectionStatus(collected, agreed) },
     { icon: ScaleIcon, label: 'Fees Due', value: `₹ ${formatINR(due)}`, hint: `${yearStudents.filter((s) => dueAmount(s) > 0).length} students pending`, tone: '', status: dueStatus(collected, agreed) },
     { icon: WalletIcon, label: `Expenses · ${year}`, value: `₹ ${formatINR(totalExpenses)}`, hint: 'All categories', tone: 'gold', status: '' },
-    { icon: TeachersIcon, label: 'Monthly Salary Outgo', value: `₹ ${formatINR(salaryOutgo)}`, hint: `${staff.length} teachers & staff`, tone: 'gold', status: '' },
+    { icon: TeachersIcon, label: 'Monthly Salary Outgo', value: `₹ ${formatINR(salaryOutgo)}`, hint: `${activeStaff.length} active · ${attr.rate.toFixed(1)}% attrition`, tone: 'gold', status: '' },
     { icon: ScaleIcon, label: 'Net Position', value: `₹ ${formatINR(net)}`, hint: 'Collected − expenses', tone: 'deep', status: signStatus(net) },
   ];
 

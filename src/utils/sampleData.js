@@ -43,12 +43,13 @@ export function buildSampleData() {
   }));
 
   const staff = [
-    ['Prof. Nusrath Jahan', 'Principal', 'Administration', 'M.A, B.Ed, Ph.D', 45000, '2022-06-01'],
-    ['Sana Tabassum', 'Lecturer', 'Physics', 'M.Sc, B.Ed', 28000, '2023-06-01'],
-    ['Rehana Parveen', 'Lecturer', 'Chemistry', 'M.Sc', 28000, '2023-06-01'],
-    ['Asma Farheen', 'Lecturer', 'Mathematics', 'M.Sc, B.Ed', 27000, '2024-06-01'],
-    ['Bibi Hajira', 'Office Staff', 'Accounts', 'B.Com', 18000, '2023-06-15'],
-  ].map(([name, designation, subject, qualification, salary, joinDate], i) => ({
+    ['Prof. Nusrath Jahan', 'Principal', 'Administration', 'M.A, B.Ed, Ph.D', 45000, '2022-06-01', 'active', ''],
+    ['Sana Tabassum', 'Lecturer', 'Physics', 'M.Sc, B.Ed', 28000, '2023-06-01', 'active', ''],
+    ['Rehana Parveen', 'Lecturer', 'Chemistry', 'M.Sc', 28000, '2023-06-01', 'active', ''],
+    ['Asma Farheen', 'Lecturer', 'Mathematics', 'M.Sc, B.Ed', 27000, '2024-06-01', 'active', ''],
+    ['Bibi Hajira', 'Office Staff', 'Accounts', 'B.Com', 18000, '2023-06-15', 'active', ''],
+    ['Shabana Kausar', 'Lecturer', 'Biology', 'M.Sc', 27000, '2022-06-01', 'left', '2026-07-15'],
+  ].map(([name, designation, subject, qualification, salary, joinDate, status, exitDate], i) => ({
     id: `sample-t${i + 1}`,
     name,
     designation,
@@ -59,6 +60,8 @@ export function buildSampleData() {
     address: 'Bengaluru, Karnataka',
     salary,
     joinDate,
+    status,
+    exitDate,
     photo: '',
   }));
 

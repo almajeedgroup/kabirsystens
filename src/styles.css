@@ -1025,6 +1025,12 @@ input[type='file'] {
   border: 1.5px solid var(--line);
 }
 
+.badge.badge-muted {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink-70);
+  font-weight: 600;
+}
+
 .empty-state {
   text-align: center;
   padding: 48px 24px;

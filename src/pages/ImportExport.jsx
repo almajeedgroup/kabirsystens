@@ -10,7 +10,7 @@ import { useConfirm } from '../components/Confirm.jsx';
 import {
   EXPENSE_CATEGORIES, MONTHS, monthLabel, formatINR, PAYMENT_STAGES,
 } from '../constants.js';
-import { exportCSV, exportWord } from '../utils/export.js';
+import { exportCSV, exportWord, downloadBlob } from '../utils/export.js';
 import {
   DownloadIcon, UploadIcon, PrintIcon, StudentsIcon, TeachersIcon, WalletIcon, ScaleIcon, ReportIcon, RupeeIcon,
 } from '../components/Icons.jsx';
@@ -68,9 +68,10 @@ function feeRegisterRows(students, year) {
 
 function staffRows(staff) {
   return [
-    ['Name', 'Designation', 'Subject', 'Qualification', 'Phone', 'Email', 'Joining Date', 'Monthly Salary'],
+    ['Name', 'Designation', 'Subject', 'Qualification', 'Phone', 'Email', 'Joining Date', 'Monthly Salary', 'Status', 'Date of Leaving'],
     ...staff.map((s) => [
       s.name, s.designation, s.subject, s.qualification, s.phone, s.email, s.joinDate, s.salary,
+      (s.status || 'active') === 'left' ? 'Left' : 'Active', s.exitDate || '',
     ]),
   ];
 }
@@ -124,14 +125,7 @@ export default function ImportExport({ year }) {
   // ---- Full backup & restore ----
   const downloadBackup = () => {
     const blob = new Blob([JSON.stringify(exportAllData(), null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kabir-college-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(`kabir-college-backup-${new Date().toISOString().slice(0, 10)}.json`, blob);
     toast('Backup downloaded');
   };
 
