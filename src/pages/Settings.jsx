@@ -1,14 +1,29 @@
 import { useState } from 'react';
-import { getSettings, updateSettings } from '../store.js';
+import { getSettings, updateSettings, clearAllData } from '../store.js';
 import { readPhoto } from '../constants.js';
 import { useToast } from '../components/Toast.jsx';
+import { useConfirm } from '../components/Confirm.jsx';
 import Logo from '../components/Logo.jsx';
-import { PhoneIcon, MailIcon, PinIcon } from '../components/Icons.jsx';
+import { PhoneIcon, MailIcon, PinIcon, TrashIcon } from '../components/Icons.jsx';
 
 export default function Settings() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [form, setForm] = useState(getSettings());
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  const eraseAll = async () => {
+    const ok = await confirm({
+      title: 'Clear all data?',
+      message: 'This permanently deletes every student, teacher, expense and balance sheet. Download a backup first if you might need it. This cannot be undone.',
+      confirmLabel: 'Clear everything',
+      danger: true,
+    });
+    if (ok) {
+      clearAllData();
+      toast('All data cleared');
+    }
+  };
 
   const onLogo = async (e) => {
     const file = e.target.files?.[0];
@@ -105,6 +120,24 @@ export default function Settings() {
               This identity appears on the sidebar and as the letterhead on Word and printed reports.
             </p>
           </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-head">
+          <div>
+            <h3>Data</h3>
+            <div className="sub">Back up or move data from Finance → Import &amp; Export. Clearing is permanent.</div>
+          </div>
+          <button className="btn ghost" onClick={eraseAll}>
+            <TrashIcon size={16} /> Clear All Data
+          </button>
+        </div>
+        <div className="card-body">
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--ink-50)' }}>
+            Removes every student, teacher, expense and balance sheet from this system. Your college
+            details above are kept. Download a backup first if you might need the data again.
+          </p>
         </div>
       </div>
     </>

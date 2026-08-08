@@ -1,14 +1,22 @@
-import { getData, expensesAnnualTotal, getBalanceSheet, paidTotal, dueAmount } from '../store.js';
+import {
+  getData, expensesAnnualTotal, getBalanceSheet, paidTotal, dueAmount,
+  isEmpty, loadSampleData, firebaseAvailable,
+} from '../store.js';
 import { formatINR, MONTHS, monthLabel } from '../constants.js';
 import { collectionStatus, dueStatus, figClass } from '../utils/status.js';
+import { buildSampleData } from '../utils/sampleData.js';
 import BarChart from '../components/BarChart.jsx';
 import Avatar from '../components/Avatar.jsx';
+import { useToast } from '../components/Toast.jsx';
 import {
-  StudentsIcon, TeachersIcon, RupeeIcon, WalletIcon, ScaleIcon,
+  StudentsIcon, TeachersIcon, RupeeIcon, WalletIcon, ScaleIcon, PlusIcon,
 } from '../components/Icons.jsx';
 
 export default function Dashboard({ year, navigate }) {
   const { students, staff, expenses } = getData();
+  const toast = useToast();
+  // First-run onboarding: only in the local preview, only when truly empty.
+  const showOnboarding = !firebaseAvailable && isEmpty();
   const yearStudents = students.filter((s) => s.year === year);
   const sheet = getBalanceSheet(year);
 
@@ -44,6 +52,44 @@ export default function Dashboard({ year, navigate }) {
     { icon: WalletIcon, label: 'Total Expenses', value: `₹ ${formatINR(totalExpenses)}`, hint: `Academic year ${year}`, tone: 'gold', status: '' },
     { icon: ScaleIcon, label: 'Annual Fee Deficit', value: `₹ ${formatINR(annualDeficit)}`, hint: 'Assigned − received', tone: 'deep', status: collectionStatus(totalReceived, totalActual) },
   ];
+
+  if (showOnboarding) {
+    return (
+      <>
+        <div className="page-head">
+          <div>
+            <h2>Welcome</h2>
+            <p>Your administration system is ready. Explore it with sample data, or start entering real records.</p>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-body onboarding">
+            <span className="onboarding-icon"><StudentsIcon size={30} /></span>
+            <h3>Get started</h3>
+            <p>
+              Load a realistic sample college — students with fee registers, staff, monthly
+              expenses and a balance sheet — to see every feature in action. You can clear it
+              anytime from <strong>Settings → Data</strong>.
+            </p>
+            <div className="btn-row" style={{ justifyContent: 'center' }}>
+              <button
+                className="btn"
+                onClick={() => {
+                  loadSampleData(buildSampleData());
+                  toast('Sample data loaded — explore away');
+                }}
+              >
+                <WalletIcon size={16} /> Load Sample Data
+              </button>
+              <button className="btn ghost" onClick={() => navigate('students')}>
+                <PlusIcon size={16} /> Start Entering Records
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -182,6 +182,35 @@ export function deactivateFirebaseData() {
   listeners.forEach((fn) => fn());
 }
 
+// True when the database has no records at all.
+export function isEmpty() {
+  return (
+    data.students.length === 0 &&
+    data.staff.length === 0 &&
+    Object.keys(data.expenses).length === 0 &&
+    Object.keys(data.balanceSheets).length === 0
+  );
+}
+
+// Populate the app with a realistic sample dataset (exploration aid).
+export function loadSampleData(sample) {
+  data = {
+    ...structuredClone(DEFAULT_DATA),
+    ...sample,
+    settings: { ...DEFAULT_SETTINGS, ...(sample.settings || {}) },
+  };
+  data.students = data.students.map(migrateStudent);
+  notify();
+  if (mode === 'firebase') remote.replaceAll(data).catch(fail);
+}
+
+// Erase everything and return to an empty database.
+export function clearAllData() {
+  data = structuredClone(DEFAULT_DATA);
+  notify();
+  if (mode === 'firebase') remote.replaceAll(data).catch(fail);
+}
+
 // ---- Settings ----
 export function getSettings() {
   return data.settings || { ...DEFAULT_SETTINGS };

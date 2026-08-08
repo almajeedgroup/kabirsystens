@@ -848,6 +848,37 @@ input[type='file'] {
   color: var(--ink-50);
 }
 
+/* ================= Onboarding ================= */
+.onboarding {
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.onboarding-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--azure-50);
+  color: var(--azure-700);
+}
+
+.onboarding h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.onboarding p {
+  color: var(--ink-50);
+  font-size: 0.9rem;
+  margin: 0 0 20px;
+}
+
 /* ================= Category bars ================= */
 .cat-bars {
   display: flex;
