@@ -1,0 +1,38 @@
+name: Deploy to Firebase
+
+# Builds the app and deploys Hosting + Firestore rules to project
+# kabiradmin-bd8bd. Runs on every push to main, or on demand via the
+# "Run workflow" button (Actions tab).
+#
+# One-time setup: add a repository secret named FIREBASE_SERVICE_ACCOUNT
+# containing a Firebase service-account key JSON. Get it from
+# Firebase Console → Project settings → Service accounts →
+# "Generate new private key", then paste the whole JSON as the secret value.
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Write service account key
+        run: printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/service-account.json"
+
+      - name: Deploy Hosting and Firestore rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: npx firebase-tools@latest deploy --only hosting,firestore --project kabiradmin-bd8bd --non-interactive
