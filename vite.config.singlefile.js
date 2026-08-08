@@ -7,6 +7,10 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig({
   base: './',
   plugins: [react(), viteSingleFile()],
+  // The shareable preview stays in local mode (no Firebase network calls).
+  define: {
+    __FORCE_LOCAL_MODE__: 'true',
+  },
   build: {
     outDir: 'dist-single',
     assetsInlineLimit: 100000000,
