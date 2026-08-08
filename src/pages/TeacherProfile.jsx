@@ -5,8 +5,10 @@ import Avatar from '../components/Avatar.jsx';
 import TeacherForm from '../components/TeacherForm.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { useConfirm } from '../components/Confirm.jsx';
+import { WEEK_DAYS } from '../constants.js';
 import {
   BackIcon, EditIcon, TrashIcon, PhoneIcon, MailIcon, PinIcon, CalendarIcon, ReportIcon,
+  UserIcon,
 } from '../components/Icons.jsx';
 
 export default function TeacherProfile({ view, navigate }) {
@@ -45,12 +47,21 @@ export default function TeacherProfile({ view, navigate }) {
   const salary = Number(teacher.salary || 0);
 
   const info = [
+    { icon: UserIcon, k: 'Employee ID', v: teacher.employeeId },
+    { icon: ReportIcon, k: 'Job Type', v: teacher.jobType },
     { icon: ReportIcon, k: 'Qualification', v: teacher.qualification },
+    { icon: CalendarIcon, k: 'Date of Birth', v: teacher.dob },
+    { icon: ReportIcon, k: 'Blood Group', v: teacher.bloodGroup },
+    { icon: ReportIcon, k: 'Aadhar No.', v: teacher.aadhar },
     { icon: CalendarIcon, k: 'Joining Date', v: teacher.joinDate },
     { icon: PhoneIcon, k: 'Phone', v: teacher.phone },
     { icon: MailIcon, k: 'Email', v: teacher.email },
     { icon: PinIcon, k: 'Address', v: teacher.address },
   ];
+
+  const workingDays = teacher.workingDays || [];
+  const timeTable = teacher.timeTable || {};
+  const hasSchedule = workingDays.length > 0 || Object.values(timeTable).some(Boolean) || teacher.workingHours;
 
   return (
     <>
@@ -115,6 +126,52 @@ export default function TeacherProfile({ view, navigate }) {
               Salaries are recorded month-by-month under Monthly Expenses → Salaries.
             </p>
           </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-head">
+          <div>
+            <h3>Working Schedule &amp; Time Table</h3>
+            <div className="sub">
+              {teacher.workingHours ? `Working hours: ${teacher.workingHours} · ` : ''}
+              {workingDays.length ? `${workingDays.length} working day${workingDays.length === 1 ? '' : 's'} a week` : 'No schedule recorded'}
+            </div>
+          </div>
+        </div>
+        <div className="card-body flush" style={{ paddingBottom: 0 }}>
+          {!hasSchedule ? (
+            <div className="empty-state" style={{ padding: '28px 24px' }}>
+              <strong>No schedule yet</strong>
+              <p>Add working days and the lecture time table from Edit Profile.</p>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Day</th>
+                    <th scope="col">Working</th>
+                    <th scope="col">Lecture Time Table</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {WEEK_DAYS.map((day) => {
+                    const on = workingDays.includes(day);
+                    return (
+                      <tr key={day}>
+                        <td className="cell-strong">{day}</td>
+                        <td>
+                          {on ? <span className="badge solid">Working</span> : <span className="badge badge-muted">Off</span>}
+                        </td>
+                        <td>{on ? (timeTable[day] || '—') : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

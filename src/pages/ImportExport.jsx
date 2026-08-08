@@ -4,6 +4,9 @@ import {
   importStudents, importStaffMembers, importExpenses, exportAllData, importAllData,
 } from '../store.js';
 import { parseCSV, detectDomain, mapRows } from '../utils/csv.js';
+import {
+  parseFile, FIELD_SETS, TYPE_LABELS, guessMapping, buildRecords, suggestType,
+} from '../utils/importer.js';
 import Modal from '../components/Modal.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { useConfirm } from '../components/Confirm.jsx';
@@ -68,10 +71,18 @@ function feeRegisterRows(students, year) {
 
 function staffRows(staff) {
   return [
-    ['Name', 'Designation', 'Subject', 'Qualification', 'Phone', 'Email', 'Joining Date', 'Monthly Salary', 'Status', 'Date of Leaving'],
+    [
+      'Employee ID', 'Name', 'Job Type', 'Designation', 'Subject', 'Qualification',
+      'Date of Birth', 'Blood Group', 'Aadhar No.', 'Phone', 'Email', 'Address',
+      'Joining Date', 'Monthly Salary', 'Status', 'Date of Leaving',
+      'Working Hours', 'Working Days', 'Time Table',
+    ],
     ...staff.map((s) => [
-      s.name, s.designation, s.subject, s.qualification, s.phone, s.email, s.joinDate, s.salary,
-      (s.status || 'active') === 'left' ? 'Left' : 'Active', s.exitDate || '',
+      s.employeeId, s.name, s.jobType, s.designation, s.subject, s.qualification,
+      s.dob, s.bloodGroup, s.aadhar, s.phone, s.email, s.address,
+      s.joinDate, s.salary, (s.status || 'active') === 'left' ? 'Left' : 'Active', s.exitDate || '',
+      s.workingHours, (s.workingDays || []).join(' '),
+      Object.entries(s.timeTable || {}).filter(([, v]) => v).map(([d, v]) => `${d}: ${v}`).join(' | '),
     ]),
   ];
 }
@@ -116,7 +127,8 @@ export default function ImportExport({ year }) {
   const confirm = useConfirm();
 
   // ---- Import state ----
-  const [preview, setPreview] = useState(null); // {detection, mapped, fileName}
+  const [preview, setPreview] = useState(null); // expenses/balance auto-detect: {detection, mapped, fileName}
+  const [mapState, setMapState] = useState(null); // list mapping: {type, headers, rows, mapping, fileName}
   const [importError, setImportError] = useState('');
   const [importResult, setImportResult] = useState('');
   const fileRef = useRef(null);
@@ -149,44 +161,53 @@ export default function ImportExport({ year }) {
     }
   };
 
+  // Choose which record type to map a sheet's columns onto.
+  const openMapping = (type, headers, rows, fileName) => {
+    setMapState({ type, headers, rows, mapping: guessMapping(type, headers), fileName });
+  };
+
   const onFile = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
     setImportError('');
     setImportResult('');
-    const text = await file.text();
-    const rows = parseCSV(text);
-    if (rows.length < 2) {
+    let parsed;
+    try {
+      parsed = await parseFile(file); // { headers, rows }
+    } catch (err) {
+      setImportError(err.message || 'Could not read this file.');
+      return;
+    }
+    const { headers, rows } = parsed;
+    if (!headers.length || !rows.length) {
       setImportError('The file appears to be empty or has no data rows.');
       return;
     }
-    const detection = detectDomain(rows);
-    if (!detection) {
-      setImportError(
-        'Could not recognise this file. Use headers like the exported sheets — e.g. a fee register (Name, Class, Agreed Amount, instalments…), a staff list (Name, Designation, Salary…) or a monthly expense sheet (Description + month columns).'
-      );
+
+    // Matrix-shaped sheets (monthly expenses, balance sheet) go straight to a
+    // simple confirm; record lists go through the column-mapping step.
+    const matrix = [headers, ...rows];
+    const detection = detectDomain(matrix);
+    if (detection && (detection.type === 'expenses' || detection.type === 'balance')) {
+      const mapped = mapRows(matrix, detection);
+      const count = Array.isArray(mapped) ? mapped.length : Object.keys(mapped).length;
+      if (!count) {
+        setImportError(`Detected "${detection.label}" but found no usable rows.`);
+        return;
+      }
+      setPreview({ detection, mapped, fileName: file.name });
       return;
     }
-    const mapped = mapRows(rows, detection);
-    const count = Array.isArray(mapped) ? mapped.length : Object.keys(mapped).length;
-    if (!count) {
-      setImportError(`Detected "${detection.label}" but found no usable rows.`);
-      return;
-    }
-    setPreview({ detection, mapped, fileName: file.name });
+
+    const type = detection && detection.type === 'staff' ? 'staff' : suggestType(headers);
+    openMapping(type, headers, rows, file.name);
   };
 
   const confirmImport = () => {
     const { detection, mapped } = preview;
     let msg = '';
-    if (detection.type === 'students' || detection.type === 'feeRegister') {
-      const { added, updated } = importStudents(mapped, year);
-      msg = `${detection.label} → Students (${year}): ${added} added, ${updated} updated.`;
-    } else if (detection.type === 'staff') {
-      const { added, updated } = importStaffMembers(mapped);
-      msg = `Teachers & Staff: ${added} added, ${updated} updated.`;
-    } else if (detection.type === 'expenses') {
+    if (detection.type === 'expenses') {
       const { rows, cells } = importExpenses(year, mapped, categories);
       msg = `Monthly Expenses (${year}): ${rows} categories, ${cells} amounts imported.`;
     } else if (detection.type === 'balance') {
@@ -197,6 +218,28 @@ export default function ImportExport({ year }) {
     setImportResult(msg);
     toast(msg, 'success');
   };
+
+  // Apply a column-mapped list import.
+  const confirmMapping = () => {
+    const { type, rows, mapping } = mapState;
+    const records = buildRecords(type, rows, mapping);
+    let msg = '';
+    if (type === 'students') {
+      const { added, updated } = importStudents(records, year);
+      msg = `Students (${year}): ${added} added, ${updated} updated.`;
+    } else {
+      const { added, updated } = importStaffMembers(records);
+      msg = `Teachers & Staff: ${added} added, ${updated} updated.`;
+    }
+    setMapState(null);
+    setImportResult(msg);
+    toast(msg, 'success');
+  };
+
+  const mappedRequiredMissing = mapState
+    ? FIELD_SETS[mapState.type].some((f) => f.required && (mapState.mapping[f.key] == null || mapState.mapping[f.key] < 0))
+    : false;
+  const mapPreview = mapState ? buildRecords(mapState.type, mapState.rows.slice(0, 3), mapState.mapping) : [];
 
   const items = [
     {
@@ -272,23 +315,23 @@ export default function ImportExport({ year }) {
       <div className="card">
         <div className="card-head">
           <div>
-            <h3>Import Data (CSV)</h3>
+            <h3>Import Data (Excel / CSV)</h3>
             <div className="sub">
-              Upload any CSV — a fee register, student list, teachers &amp; staff list, monthly
-              expense sheet or balance sheet. The file is recognised automatically and every
-              column is allocated to the right place for academic year {year}.
+              Upload an Excel (.xlsx) or CSV file — students, a fee register, teachers &amp; staff,
+              monthly expenses or a balance sheet. For record lists you choose which column maps to
+              which field, so any spreadsheet layout imports cleanly into academic year {year}.
             </div>
           </div>
           <button className="btn" onClick={() => fileRef.current?.click()}>
-            <UploadIcon size={16} /> Choose CSV File
+            <UploadIcon size={16} /> Choose File
           </button>
           <input
             ref={fileRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             onChange={onFile}
             style={{ display: 'none' }}
-            aria-label="Import CSV file"
+            aria-label="Import Excel or CSV file"
           />
         </div>
         <div className="card-body">
@@ -438,6 +481,95 @@ export default function ImportExport({ year }) {
             <button className="btn ghost" onClick={() => setPreview(null)}>Cancel</button>
             <button className="btn" onClick={confirmImport}>
               <UploadIcon size={15} /> Import {Array.isArray(preview.mapped) ? `${previewCount} record${previewCount === 1 ? '' : 's'}` : 'balance sheet'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {mapState && (
+        <Modal title="Map Columns & Import" onClose={() => setMapState(null)} wide>
+          <div className="map-head">
+            <div>
+              <strong>{mapState.fileName}</strong>
+              <span className="meta"> · {mapState.rows.length} rows · {mapState.headers.length} columns</span>
+            </div>
+            <label className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              Import as:
+              <select
+                value={mapState.type}
+                onChange={(e) => {
+                  const type = e.target.value;
+                  setMapState((m) => ({ ...m, type, mapping: guessMapping(type, m.headers) }));
+                }}
+              >
+                {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+          </div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--ink-50)', margin: '0 0 14px' }}>
+            Choose which column from your file goes into each field. We pre-filled the obvious ones —
+            adjust any of them. Set unwanted fields to <em>“skip”</em>. Only mapped fields are stored.
+          </p>
+
+          <div className="map-fields">
+            {FIELD_SETS[mapState.type].map((f) => (
+              <label className="map-row" key={f.key}>
+                <span className="map-label">
+                  {f.label}{f.required && <span className="req"> *</span>}
+                </span>
+                <select
+                  value={mapState.mapping[f.key] ?? -1}
+                  onChange={(e) =>
+                    setMapState((m) => ({ ...m, mapping: { ...m.mapping, [f.key]: Number(e.target.value) } }))
+                  }
+                >
+                  <option value={-1}>— skip —</option>
+                  {mapState.headers.map((h, i) => (
+                    <option key={i} value={i}>{h || `Column ${i + 1}`}</option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+
+          {mapPreview.length > 0 && (
+            <>
+              <div className="map-label" style={{ margin: '16px 0 6px' }}>Preview (first {mapPreview.length})</div>
+              <div className="table-wrap" style={{ border: 'var(--hairline)', borderRadius: 8 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      {(mapState.type === 'students'
+                        ? ['name', 'className', 'combination', 'agreedAmount']
+                        : ['name', 'employeeId', 'designation', 'jobType']
+                      ).map((k) => <th scope="col" key={k}>{k}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mapPreview.map((r, i) => (
+                      <tr key={i}>
+                        {(mapState.type === 'students'
+                          ? ['name', 'className', 'combination', 'agreedAmount']
+                          : ['name', 'employeeId', 'designation', 'jobType']
+                        ).map((k) => <td key={k}>{String(r[k] ?? '') || '—'}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {mappedRequiredMissing && (
+            <div className="notice error" style={{ marginTop: 14 }}>
+              Map the required field(s) marked * before importing.
+            </div>
+          )}
+
+          <div className="btn-row" style={{ justifyContent: 'flex-end', marginTop: 16 }}>
+            <button className="btn ghost" onClick={() => setMapState(null)}>Cancel</button>
+            <button className="btn" onClick={confirmMapping} disabled={mappedRequiredMissing}>
+              <UploadIcon size={15} /> Import into {TYPE_LABELS[mapState.type]}
             </button>
           </div>
         </Modal>

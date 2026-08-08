@@ -8,8 +8,26 @@ import { getSettings } from '../store.js';
 //    download attribute is unsupported or blocked (e.g. sandboxed frames).
 export function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
+  const cleanup = () => setTimeout(() => URL.revokeObjectURL(url), 15000);
+
+  let inIframe = false;
+  try {
+    inIframe = window.self !== window.top;
+  } catch {
+    inIframe = true;
+  }
+
+  // Inside an embedded frame the browser blocks anchor downloads, so open
+  // the file in a new tab where it can be saved. On a normal page, download.
+  if (inIframe) {
+    const win = window.open(url, '_blank');
+    if (win) {
+      cleanup();
+      return;
+    }
+  }
+
   const a = document.createElement('a');
-  const supportsDownload = 'download' in a;
   a.href = url;
   a.download = filename;
   a.rel = 'noopener';
@@ -19,12 +37,10 @@ export function downloadBlob(filename, blob) {
   try {
     a.click();
   } catch {
-    if (!supportsDownload) window.open(url, '_blank');
+    window.open(url, '_blank');
   }
-  setTimeout(() => {
-    a.remove();
-    URL.revokeObjectURL(url);
-  }, 10000);
+  a.remove();
+  cleanup();
 }
 
 const download = downloadBlob;

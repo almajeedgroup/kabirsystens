@@ -42,28 +42,50 @@ export function buildSampleData() {
     payments,
   }));
 
+  const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const tt = (subject) => ({
+    Mon: `P1 ${subject} · P4 ${subject}`,
+    Tue: `P2 ${subject} · P5 ${subject} Lab`,
+    Wed: `P1 ${subject} · P3 ${subject}`,
+    Thu: `P2 ${subject} · P6 ${subject}`,
+    Fri: `P3 ${subject} · P5 ${subject}`,
+    Sat: `P1 ${subject}`,
+  });
+
   const staff = [
-    ['Prof. Nusrath Jahan', 'Principal', 'Administration', 'M.A, B.Ed, Ph.D', 45000, '2022-06-01', 'active', ''],
-    ['Sana Tabassum', 'Lecturer', 'Physics', 'M.Sc, B.Ed', 28000, '2023-06-01', 'active', ''],
-    ['Rehana Parveen', 'Lecturer', 'Chemistry', 'M.Sc', 28000, '2023-06-01', 'active', ''],
-    ['Asma Farheen', 'Lecturer', 'Mathematics', 'M.Sc, B.Ed', 27000, '2024-06-01', 'active', ''],
-    ['Bibi Hajira', 'Office Staff', 'Accounts', 'B.Com', 18000, '2023-06-15', 'active', ''],
-    ['Shabana Kausar', 'Lecturer', 'Biology', 'M.Sc', 27000, '2022-06-01', 'left', '2026-07-15'],
-  ].map(([name, designation, subject, qualification, salary, joinDate, status, exitDate], i) => ({
-    id: `sample-t${i + 1}`,
-    name,
-    designation,
-    subject,
-    qualification,
-    phone: `98800 2${String(i).padStart(4, '0')}`,
-    email: '',
-    address: 'Bengaluru, Karnataka',
-    salary,
-    joinDate,
-    status,
-    exitDate,
-    photo: '',
-  }));
+    ['Prof. Nusrath Jahan', 'Teaching (Full-time)', 'Principal', 'Administration', 'M.A, B.Ed, Ph.D', 45000, '2022-06-01', 'active', '', 'B+'],
+    ['Sana Tabassum', 'Teaching (Full-time)', 'Lecturer', 'Physics', 'M.Sc, B.Ed', 28000, '2023-06-01', 'active', '', 'O+'],
+    ['Rehana Parveen', 'Teaching (Full-time)', 'Lecturer', 'Chemistry', 'M.Sc', 28000, '2023-06-01', 'active', '', 'A+'],
+    ['Asma Farheen', 'Teaching (Part-time)', 'Lecturer', 'Mathematics', 'M.Sc, B.Ed', 27000, '2024-06-01', 'active', '', 'AB+'],
+    ['Bibi Hajira', 'Non-Teaching', 'Office Staff', 'Accounts', 'B.Com', 18000, '2023-06-15', 'active', '', 'O-'],
+    ['Shabana Kausar', 'Teaching (Full-time)', 'Lecturer', 'Biology', 'M.Sc', 27000, '2022-06-01', 'left', '2026-07-15', 'B-'],
+  ].map(([name, jobType, designation, subject, qualification, salary, joinDate, status, exitDate, bloodGroup], i) => {
+    const teaching = jobType.startsWith('Teaching');
+    const days = jobType === 'Teaching (Part-time)' ? ['Mon', 'Wed', 'Fri'] : allDays;
+    return {
+      id: `sample-t${i + 1}`,
+      name,
+      employeeId: `EMP-${String(i + 1).padStart(3, '0')}`,
+      jobType,
+      designation,
+      subject,
+      qualification,
+      phone: `98800 2${String(i).padStart(4, '0')}`,
+      email: '',
+      address: 'Bengaluru, Karnataka',
+      dob: `19${85 + i}-0${(i % 9) + 1}-1${i % 9}`,
+      bloodGroup,
+      aadhar: `${4000 + i} ${5000 + i} ${6000 + i}`,
+      salary,
+      joinDate,
+      status,
+      exitDate,
+      workingHours: teaching ? '9:00 AM – 4:00 PM' : '9:30 AM – 5:30 PM',
+      workingDays: days,
+      timeTable: teaching && subject !== 'Administration' ? tt(subject) : {},
+      photo: '',
+    };
+  });
 
   // Monthly expenses (June–Jan filled), salaries dominant.
   const monthlyBase = {

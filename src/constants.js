@@ -30,6 +30,18 @@ export const CLASSES = ['I PUC', 'II PUC'];
 
 export const PAYMENT_MODES = ['Cash', 'UPI', 'Bank Transfer', 'Cheque', 'Card', 'Other'];
 
+export const JOB_TYPES = [
+  'Teaching (Full-time)',
+  'Teaching (Part-time)',
+  'Non-Teaching',
+  'Visiting Faculty',
+  'Contract',
+];
+
+export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+export const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 // Fee register stages: admission payment plus three instalments.
 export const PAYMENT_STAGES = [
   { key: 'admission', label: 'At the Time of Admission', short: 'Admission' },
