@@ -60,10 +60,17 @@ npm run dev      # development server
 npm run build    # production build (dist/)
 ```
 
-## Data storage
+## Data storage & Firebase
 
-Phase 1 stores all data in the browser's `localStorage` behind a single data
-layer (`src/store.js`). Phase 2 will replace that layer with **Firebase
-Firestore**, add **Firebase Authentication** for sign-in, and deploy on
-**Firebase Hosting** — no UI changes required because all reads/writes already
-go through the store's API.
+The app runs in two modes automatically, both behind one data layer
+(`src/store.js`):
+
+- **Local mode** (default, no credentials) — data in the browser's
+  `localStorage`, no login. Used by the preview link.
+- **Firebase mode** (credentials present) — an **admin login** (Firebase
+  Authentication, email/password) and cloud storage in **Cloud Firestore**,
+  deployable to **Firebase Hosting**.
+
+To go live, add your Firebase web config (via a `.env` file or
+`src/firebaseConfig.js`) and follow **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)**.
+No UI changes are needed — the store switches modes on its own.

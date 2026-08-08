@@ -1,8 +1,10 @@
 // Data layer for the college administration app.
 //
-// All reads and writes go through this module so the storage backend can be
-// swapped for Firebase Firestore later without touching the UI: replace the
-// load/save implementations with Firestore calls and keep the same API.
+// Reads are always synchronous from the in-memory `data` model. Persistence
+// is pluggable: in LOCAL mode it writes to the browser's localStorage; in
+// FIREBASE mode (after the admin signs in) it writes through to Firestore.
+// The UI never changes — it always talks to this module's API.
+import { firebaseEnabled, loadAll, remote } from './firebase.js';
 
 const STORAGE_KEY = 'kabir_college_admin_v1';
 
@@ -87,17 +89,26 @@ export function updatePayment(studentId, stage, patch) {
       : s
   );
   notify();
+  const updated = data.students.find((s) => s.id === studentId);
+  if (updated) cloud.studentDebounced(updated);
 }
 
-function save(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function saveLocal() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    /* storage full or unavailable — ignore */
+  }
 }
 
 let data = load();
+let mode = 'local'; // 'local' | 'firebase'
 const listeners = new Set();
 
+export const firebaseAvailable = firebaseEnabled;
+
 function notify() {
-  save(data);
+  if (mode === 'local') saveLocal();
   listeners.forEach((fn) => fn());
 }
 
@@ -114,6 +125,63 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+// ---- Cloud sync (Firebase mode) ----
+let syncErrorHandler = null;
+export function onSyncError(fn) {
+  syncErrorHandler = fn;
+}
+function fail(err) {
+  console.error('Cloud sync error:', err);
+  if (syncErrorHandler) syncErrorHandler(err);
+}
+
+const timers = {};
+function debounce(key, op, delay = 700) {
+  clearTimeout(timers[key]);
+  timers[key] = setTimeout(() => Promise.resolve(op()).catch(fail), delay);
+}
+
+// Targeted write-through helpers. No-ops in local mode.
+const cloud = {
+  student: (s) => mode === 'firebase' && remote.putStudent(s).catch(fail),
+  studentDebounced: (s) =>
+    mode === 'firebase' && debounce(`student:${s.id}`, () => remote.putStudent(s)),
+  deleteStudent: (id) => mode === 'firebase' && remote.deleteStudent(id).catch(fail),
+  students: (list) =>
+    mode === 'firebase' && list.forEach((s) => remote.putStudent(s).catch(fail)),
+  staff: (m) => mode === 'firebase' && remote.putStaff(m).catch(fail),
+  deleteStaff: (id) => mode === 'firebase' && remote.deleteStaff(id).catch(fail),
+  staffAll: (list) =>
+    mode === 'firebase' && list.forEach((m) => remote.putStaff(m).catch(fail)),
+  expenses: () => mode === 'firebase' && debounce('expenses', () => remote.putExpenses(data.expenses)),
+  balanceSheets: () =>
+    mode === 'firebase' && debounce('balance', () => remote.putBalanceSheets(data.balanceSheets)),
+  misc: () =>
+    mode === 'firebase' && debounce('misc', () => remote.putMisc(data.customCategories, data.settings)),
+};
+
+// Switch to Firebase mode and load the whole database from Firestore.
+// Called once the admin has signed in.
+export async function activateFirebaseData() {
+  const remoteData = await loadAll();
+  data = {
+    ...structuredClone(DEFAULT_DATA),
+    ...remoteData,
+    settings: { ...DEFAULT_SETTINGS, ...(remoteData.settings || {}) },
+  };
+  data.students = data.students.map(migrateStudent);
+  mode = 'firebase';
+  listeners.forEach((fn) => fn());
+  return { students: data.students.length, staff: data.staff.length };
+}
+
+// Return to a clean local state (used on sign-out).
+export function deactivateFirebaseData() {
+  mode = 'local';
+  data = structuredClone(DEFAULT_DATA);
+  listeners.forEach((fn) => fn());
+}
+
 // ---- Settings ----
 export function getSettings() {
   return data.settings || { ...DEFAULT_SETTINGS };
@@ -122,6 +190,7 @@ export function getSettings() {
 export function updateSettings(patch) {
   data.settings = { ...getSettings(), ...patch };
   notify();
+  cloud.misc();
 }
 
 // ---- Backup & restore (whole database) ----
@@ -154,6 +223,7 @@ export function importAllData(backup) {
   };
   data.students = data.students.map(migrateStudent);
   notify();
+  if (mode === 'firebase') remote.replaceAll(data).catch(fail);
   return {
     students: data.students.length,
     staff: data.staff.length,
@@ -162,18 +232,23 @@ export function importAllData(backup) {
 
 // ---- Students ----
 export function addStudent(student) {
-  data.students = [...data.students, migrateStudent({ ...student, id: uid() })];
+  const record = migrateStudent({ ...student, id: uid() });
+  data.students = [...data.students, record];
   notify();
+  cloud.student(record);
 }
 
 export function updateStudent(id, patch) {
   data.students = data.students.map((s) => (s.id === id ? { ...s, ...patch } : s));
   notify();
+  const updated = data.students.find((s) => s.id === id);
+  if (updated) cloud.student(updated);
 }
 
 export function deleteStudent(id) {
   data.students = data.students.filter((s) => s.id !== id);
   notify();
+  cloud.deleteStudent(id);
 }
 
 // Bulk import: merge incoming students into the given year. Matches an
@@ -183,6 +258,7 @@ export function importStudents(incoming, year) {
   let added = 0;
   let updated = 0;
   let students = [...data.students];
+  const touched = [];
   for (const rec of incoming) {
     const match = students.find(
       (s) =>
@@ -206,31 +282,40 @@ export function importStudents(incoming, year) {
         }
       }
       students = students.map((s) => (s.id === match.id ? merged : s));
+      touched.push(merged);
       updated++;
     } else {
-      students.push(migrateStudent({ ...rec, year, id: uid() }));
+      const record = migrateStudent({ ...rec, year, id: uid() });
+      students.push(record);
+      touched.push(record);
       added++;
     }
   }
   data.students = students;
   notify();
+  cloud.students(touched);
   return { added, updated };
 }
 
 // ---- Staff ----
 export function addStaff(member) {
-  data.staff = [...data.staff, { ...member, id: uid() }];
+  const record = { ...member, id: uid() };
+  data.staff = [...data.staff, record];
   notify();
+  cloud.staff(record);
 }
 
 export function updateStaff(id, patch) {
   data.staff = data.staff.map((s) => (s.id === id ? { ...s, ...patch } : s));
   notify();
+  const updated = data.staff.find((s) => s.id === id);
+  if (updated) cloud.staff(updated);
 }
 
 export function deleteStaff(id) {
   data.staff = data.staff.filter((s) => s.id !== id);
   notify();
+  cloud.deleteStaff(id);
 }
 
 // Bulk import: merge incoming staff records, matching by name.
@@ -238,6 +323,7 @@ export function importStaffMembers(incoming) {
   let added = 0;
   let updated = 0;
   let staff = [...data.staff];
+  const touched = [];
   for (const rec of incoming) {
     const match = staff.find(
       (s) => s.name.trim().toLowerCase() === rec.name.trim().toLowerCase()
@@ -248,14 +334,18 @@ export function importStaffMembers(incoming) {
         if (v !== '' && v !== undefined && v !== null) merged[k] = v;
       }
       staff = staff.map((s) => (s.id === match.id ? merged : s));
+      touched.push(merged);
       updated++;
     } else {
-      staff.push({ ...rec, id: uid() });
+      const record = { ...rec, id: uid() };
+      staff.push(record);
+      touched.push(record);
       added++;
     }
   }
   data.staff = staff;
   notify();
+  cloud.staffAll(touched);
   return { added, updated };
 }
 
@@ -279,6 +369,8 @@ export function importExpenses(year, rows, knownCategories) {
     cells += Object.keys(months).length;
   }
   notify();
+  cloud.expenses();
+  cloud.misc();
   return { rows: rows.length, cells };
 }
 
@@ -294,6 +386,7 @@ export function setExpense(year, category, monthIndex, amount) {
   yearData[category] = catData;
   data.expenses = { ...data.expenses, [year]: yearData };
   notify();
+  cloud.expenses();
 }
 
 export function getExpense(year, category, monthIndex) {
@@ -315,6 +408,7 @@ export function addCategory(name) {
   if (!data.customCategories.includes(clean)) {
     data.customCategories = [...data.customCategories, clean];
     notify();
+    cloud.misc();
   }
 }
 
@@ -328,6 +422,8 @@ export function removeCategory(name) {
   }
   data.expenses = expenses;
   notify();
+  cloud.misc();
+  cloud.expenses();
 }
 
 // ---- Balance sheet ----
@@ -345,6 +441,7 @@ export function getBalanceSheet(year) {
 export function setBalanceSheet(year, sheet) {
   data.balanceSheets = { ...data.balanceSheets, [year]: { ...getBalanceSheet(year), ...sheet } };
   notify();
+  cloud.balanceSheets();
 }
 
 // Fill the balance sheet from student fee records for the given year.

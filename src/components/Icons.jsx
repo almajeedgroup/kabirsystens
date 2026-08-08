@@ -99,6 +99,10 @@ export const UserIcon = (p) => (
   <Icon {...p}><circle cx="12" cy="8" r="4" /><path d="M4.5 21c.8-4 3.9-6.2 7.5-6.2s6.7 2.2 7.5 6.2" /></Icon>
 );
 
+export const LogoutIcon = (p) => (
+  <Icon {...p}><path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H15" /><path d="M10 12h10" /><path d="m13 8-4 4 4 4" /></Icon>
+);
+
 export const SettingsIcon = (p) => (
   <Icon {...p}><circle cx="12" cy="12" r="3.2" /><path d="M12 2.5v2.6M12 18.9v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M2.5 12h2.6M18.9 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9" /></Icon>
 );

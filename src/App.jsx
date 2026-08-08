@@ -1,9 +1,15 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { COLLEGE, academicYearOptions, currentAcademicYear } from './constants.js';
-import { subscribe, getData, getSettings } from './store.js';
-import Logo from './components/Logo.jsx';
 import {
-  HomeIcon, StudentsIcon, TeachersIcon, WalletIcon, CalendarIcon, SettingsIcon,
+  subscribe, getData, getSettings, firebaseAvailable,
+  activateFirebaseData, deactivateFirebaseData, onSyncError,
+} from './store.js';
+import { watchAuth, signOutUser } from './firebase.js';
+import Logo from './components/Logo.jsx';
+import Login from './components/Login.jsx';
+import { useToast } from './components/Toast.jsx';
+import {
+  HomeIcon, StudentsIcon, TeachersIcon, WalletIcon, CalendarIcon, SettingsIcon, LogoutIcon,
 } from './components/Icons.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Students from './pages/Students.jsx';
@@ -51,6 +57,9 @@ const NAV_PARENT = { studentProfile: 'students', teacherProfile: 'teachers' };
 export default function App() {
   const [view, setView] = useState({ page: 'dashboard' });
   const [year, setYear] = useState(currentAcademicYear());
+  // Auth phase (Firebase mode only): 'loading' | 'out' | 'in'.
+  const [authPhase, setAuthPhase] = useState(firebaseAvailable ? 'loading' : 'in');
+  const toast = useToast();
 
   useSyncExternalStore(subscribe, getData);
 
@@ -58,10 +67,54 @@ export default function App() {
     document.title = `${COLLEGE.name} — Administration`;
   }, []);
 
+  // Surface cloud sync failures to the admin.
+  useEffect(() => {
+    onSyncError(() => toast('Could not save to the cloud — check your connection', 'error'));
+  }, [toast]);
+
+  // Watch Firebase auth and load cloud data once signed in.
+  useEffect(() => {
+    if (!firebaseAvailable) return undefined;
+    return watchAuth(async (user) => {
+      if (user) {
+        try {
+          await activateFirebaseData();
+          setAuthPhase('in');
+        } catch {
+          toast('Could not load data from the cloud', 'error');
+          setAuthPhase('in');
+        }
+      } else {
+        deactivateFirebaseData();
+        setAuthPhase('out');
+      }
+    });
+  }, [toast]);
+
+  const signOut = async () => {
+    await signOutUser();
+    setView({ page: 'dashboard' });
+  };
+
   const navigate = (page, params = {}) => {
     setView({ page, ...params });
     window.scrollTo({ top: 0 });
   };
+
+  if (authPhase === 'loading') {
+    return (
+      <div className="login-screen">
+        <div className="login-card" style={{ textAlign: 'center' }}>
+          <Logo size={56} />
+          <p style={{ marginTop: 16, color: 'var(--ink-50)' }}>Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authPhase === 'out') {
+    return <Login />;
+  }
 
   const activeNav = NAV_PARENT[view.page] || view.page;
 
@@ -134,6 +187,11 @@ export default function App() {
                 ))}
               </select>
             </div>
+            {firebaseAvailable && (
+              <button className="btn ghost small" onClick={signOut} title="Sign out">
+                <LogoutIcon size={16} /> Sign out
+              </button>
+            )}
           </div>
         </header>
 
