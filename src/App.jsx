@@ -157,103 +157,99 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <button
-          className="brand-mini"
-          onClick={() => navigate('dashboard')}
-          aria-label="Home"
-        >
+      <aside className="rail no-print">
+        <button className="rail-brand" onClick={() => navigate('dashboard')} aria-label="Home" title={collegeName}>
           {settings.logo ? (
             <img src={settings.logo} alt="" />
           ) : (
-            <Logo size={38} dark />
+            <Logo size={34} dark />
           )}
-          <span>{collegeName}</span>
         </button>
-
-        <div className="topbar-search">
-          <SearchIcon size={18} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search students or staff…"
-            aria-label="Global search"
-          />
-          {!query && <span className="kbd">⌘ /</span>}
-          {query && (
-            <div className="gs-results">
-              {results.length === 0 ? (
-                <div className="gs-empty">No matches for “{query}”.</div>
-              ) : (
-                results.map((r) => (
-                  <button
-                    key={`${r.type}-${r.id}`}
-                    className="gs-item"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() =>
-                      navigate(r.type === 'student' ? 'studentProfile' : 'teacherProfile', { id: r.id })
-                    }
-                  >
-                    <Avatar name={r.name} photo={r.photo} size={30} />
-                    <span>
-                      <span className="cell-strong">{r.name}</span>
-                      <span className="meta"> · {r.meta}</span>
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="topbar-right">
-          <div className="year-picker">
-            <CalendarIcon size={15} />
-            <label htmlFor="year-select">Academic Year</label>
-            <select id="year-select" value={year} onChange={(e) => setYear(e.target.value)}>
-              {academicYearOptions().map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-          <button className="top-icon" onClick={() => navigate('settings')} aria-label="Settings" title="Settings">
-            <SettingsIcon size={18} />
-          </button>
-          <button className="top-icon" onClick={() => navigate('finance', { tab: 'importexport' })} aria-label="Import & Export" title="Import & Export">
-            <DownloadIcon size={18} />
-          </button>
-          {firebaseAvailable && (
-            <button className="top-icon" onClick={signOut} aria-label="Sign out" title="Sign out">
-              <LogoutIcon size={18} />
+        <nav className="rail-nav" aria-label="Main navigation">
+          {navItems.map(({ id, label, icon: NavIcon }) => (
+            <button
+              key={id}
+              className={`rail-item${id === activeNav ? ' active' : ''}`}
+              onClick={() => navigate(id)}
+              aria-current={id === activeNav ? 'page' : undefined}
+            >
+              <NavIcon size={21} />
+              <span className="rail-label">{label}</span>
             </button>
-          )}
-          <span className="top-avatar"><Avatar name={collegeName} photo={settings.logo} size={42} /></span>
-        </div>
-      </header>
+          ))}
+        </nav>
+        {firebaseAvailable && (
+          <div className="rail-foot">
+            <button className="rail-item" onClick={signOut}>
+              <LogoutIcon size={21} />
+              <span className="rail-label">Sign out</span>
+            </button>
+          </div>
+        )}
+      </aside>
 
-      {/* Quick section tabs — the reference has no sidebar, so navigation
-          lives up top. */}
-      <nav className="topnav no-print" aria-label="Sections">
-        {navItems.map(({ id, label, icon: NavIcon }) => (
-          <button
-            key={id}
-            className={`topnav-item${id === activeNav ? ' active' : ''}`}
-            onClick={() => navigate(id)}
-            aria-current={id === activeNav ? 'page' : undefined}
-          >
-            <NavIcon size={17} />
-            {label}
-          </button>
-        ))}
-      </nav>
+      <div className="main">
+        <header className="topbar">
+          <div className="topbar-search">
+            <SearchIcon size={18} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search students or staff…"
+              aria-label="Global search"
+            />
+            {!query && <span className="kbd">⌘ /</span>}
+            {query && (
+              <div className="gs-results">
+                {results.length === 0 ? (
+                  <div className="gs-empty">No matches for “{query}”.</div>
+                ) : (
+                  results.map((r) => (
+                    <button
+                      key={`${r.type}-${r.id}`}
+                      className="gs-item"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() =>
+                        navigate(r.type === 'student' ? 'studentProfile' : 'teacherProfile', { id: r.id })
+                      }
+                    >
+                      <Avatar name={r.name} photo={r.photo} size={30} />
+                      <span>
+                        <span className="cell-strong">{r.name}</span>
+                        <span className="meta"> · {r.meta}</span>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
-      <main className="content">
-        <div className="print-letterhead">
-          <h2 style={{ margin: 0 }}>{collegeName.toUpperCase()}</h2>
-          <div>{collegeUnit.toUpperCase()}</div>
-        </div>
-        {PAGE}
-      </main>
+          <div className="topbar-right">
+            <div className="year-picker">
+              <CalendarIcon size={15} />
+              <label htmlFor="year-select">Academic Year</label>
+              <select id="year-select" value={year} onChange={(e) => setYear(e.target.value)}>
+                {academicYearOptions().map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <button className="top-icon" onClick={() => navigate('finance', { tab: 'importexport' })} aria-label="Import & Export" title="Import & Export">
+              <DownloadIcon size={18} />
+            </button>
+            <span className="top-avatar"><Avatar name={collegeName} photo={settings.logo} size={42} /></span>
+          </div>
+        </header>
+
+        <main className="content">
+          <div className="print-letterhead">
+            <h2 style={{ margin: 0 }}>{collegeName.toUpperCase()}</h2>
+            <div>{collegeUnit.toUpperCase()}</div>
+          </div>
+          {PAGE}
+        </main>
+      </div>
     </div>
   );
 }

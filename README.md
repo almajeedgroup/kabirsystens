@@ -51,9 +51,11 @@ years (June through May, e.g. 2025-26).
 - **Accent:** Sky / cyan `#06B6D4`
 - **Deep:** `#1E2140` · **Canvas:** cool slate `#EEF1F8` · **Ink:** `#1B1E34`
 - **Type:** Inter throughout
-- Dashboard layout: no sidebar, top pill navigation, gradient KPI cards,
-  rounded white panels, a smooth line chart, and pill badges. Finance figures
-  stay traffic-light green/amber/red so status reads at a glance.
+- **Layout:** a slim **icon rail** on the left (labels on hover) + a top search
+  bar; the dashboard is a **bento grid** — a large expense-trend chart, four
+  gradient KPI tiles, and data cards (outstanding dues, expenses by category,
+  fee position, recent students). Finance figures stay traffic-light
+  green/amber/red so status reads at a glance.
 
 ## Running
 

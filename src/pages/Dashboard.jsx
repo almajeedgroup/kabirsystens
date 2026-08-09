@@ -101,10 +101,36 @@ export default function Dashboard({ year, navigate }) {
         </div>
       </div>
 
-      <div className="kpi-grid">
+      <div className="bento">
+        {/* Highlight: expense trend (2×2) */}
+        <div className="card col2 row2">
+          <div className="card-head">
+            <div>
+              <h3>Expense Overview</h3>
+              <div className="sub">Total spend per month, June {year.slice(0, 4)} – May {String(Number(year.slice(0, 4)) + 1).slice(2)}.</div>
+            </div>
+            <CardActions
+              onRefresh={() => toast('Dashboard refreshed')}
+              onDownload={() =>
+                exportCSV(`monthly-expense-trend-${year}.csv`, [
+                  ['Month', 'Total (₹)'],
+                  ...MONTHS.map((_, mi) => [monthLabel(year, mi), monthTotals[mi]]),
+                ])
+              }
+            />
+          </div>
+          <div className="card-body">
+            <LineChart
+              labels={MONTHS.map((_, mi) => monthLabel(year, mi))}
+              series={[{ name: 'Expenses', color: '#4f46e5', values: monthTotals }]}
+            />
+          </div>
+        </div>
+
+        {/* KPI tiles (1×1 each) */}
         {kpis.map(({ icon: KpiIcon, tone, label, value, hint }) => (
           <div className={`kpi-card ${tone}`} key={label}>
-            <span className="kpi-icon"><KpiIcon size={26} /></span>
+            <span className="kpi-icon"><KpiIcon size={24} /></span>
             <div>
               <div className="kpi-label">{label}</div>
               <div className="kpi-value">{value}</div>
@@ -112,119 +138,9 @@ export default function Dashboard({ year, navigate }) {
             </div>
           </div>
         ))}
-      </div>
 
-      <div className="card">
-        <div className="card-head">
-          <div>
-            <h3>Expense Overview</h3>
-            <div className="sub">Total spend per month, June {year.slice(0, 4)} – May {String(Number(year.slice(0, 4)) + 1).slice(2)}.</div>
-          </div>
-          <CardActions
-            onRefresh={() => toast('Dashboard refreshed')}
-            onDownload={() =>
-              exportCSV(`monthly-expense-trend-${year}.csv`, [
-                ['Month', 'Total (₹)'],
-                ...MONTHS.map((_, mi) => [monthLabel(year, mi), monthTotals[mi]]),
-              ])
-            }
-          />
-        </div>
-        <div className="card-body">
-          <LineChart
-            labels={MONTHS.map((_, mi) => monthLabel(year, mi))}
-            series={[{ name: 'Expenses', color: '#4f46e5', values: monthTotals }]}
-          />
-        </div>
-      </div>
-
-      <div className="profile-grid">
-        <div className="card" style={{ marginBottom: 0 }}>
-          <div className="card-head">
-            <h3>Recently Added Students</h3>
-            <button className="btn ghost small" onClick={() => navigate('students')}>View all</button>
-          </div>
-          <div className="card-body flush">
-            {recentStudents.length === 0 ? (
-              <div className="empty-state">
-                <span className="icon"><StudentsIcon /></span>
-                <strong>No students yet</strong>
-                <p>Admit students for {year} from the Students page.</p>
-              </div>
-            ) : (
-              <table>
-                <tbody>
-                  {recentStudents.map((s) => (
-                    <tr
-                      key={s.id}
-                      className="clickable"
-                      onClick={() => navigate('studentProfile', { id: s.id })}
-                    >
-                      <td>
-                        <div className="person-cell">
-                          <Avatar name={s.name} photo={s.photo} size={36} />
-                          <div>
-                            <div className="cell-strong">{s.name}</div>
-                            <div className="meta">{s.admissionNo || 'No admission no.'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <span className="badge">{s.className}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-
-        <div className="card" style={{ marginBottom: 0 }}>
-          <div className="card-head">
-            <h3>Fee Position — {year}</h3>
-            <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'balance' })}>Balance sheet</button>
-          </div>
-          <div className="card-body">
-            {['I PUC', 'II PUC'].map((cls) => {
-              const actual = Number(cls === 'I PUC' ? sheet.iPucActual : sheet.iiPucActual);
-              const received = Number(cls === 'I PUC' ? sheet.iPucReceived : sheet.iiPucReceived);
-              const pct = actual > 0 ? Math.min(100, (received / actual) * 100) : 0;
-              return (
-                <div key={cls} style={{ marginBottom: 18 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 600 }}>
-                    <span>{cls}</span>
-                    <span>₹ {formatINR(received)} / ₹ {formatINR(actual)}</span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${pct}%` }} />
-                  </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--ink-50)' }}>
-                    {actual > 0 ? `${pct.toFixed(0)}% received · ₹ ${formatINR(actual - received)} pending` : 'No amounts recorded yet'}
-                  </div>
-                </div>
-              );
-            })}
-            <div className="fee-figures">
-              <div>
-                <div className="k">Assigned</div>
-                <div className="v">₹ {formatINR(totalActual)}</div>
-              </div>
-              <div>
-                <div className="k">Received</div>
-                <div className="v">₹ {formatINR(totalReceived)}</div>
-              </div>
-              <div>
-                <div className="k">Deficit</div>
-                <div className={`v ${figClass(collectionStatus(totalReceived, totalActual))}`}>₹ {formatINR(annualDeficit)}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="profile-grid">
-        <div className="card" style={{ marginBottom: 0 }}>
+        {/* Outstanding dues (2×2) */}
+        <div className="card col2 row2">
           <div className="card-head">
             <h3>Outstanding Dues — {year}</h3>
             <button className="btn ghost small" onClick={() => navigate('students')}>All students</button>
@@ -261,7 +177,8 @@ export default function Dashboard({ year, navigate }) {
           </div>
         </div>
 
-        <div className="card" style={{ marginBottom: 0 }}>
+        {/* Expenses by category (2×2) */}
+        <div className="card col2 row2">
           <div className="card-head">
             <h3>Expenses by Category — {year}</h3>
             <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'expenses' })}>Expense sheet</button>
@@ -275,7 +192,7 @@ export default function Dashboard({ year, navigate }) {
               </div>
             ) : (
               <div className="cat-bars">
-                {categoryTotals.slice(0, 8).map(([cat, total]) => (
+                {categoryTotals.slice(0, 6).map(([cat, total]) => (
                   <div className="cat-bar" key={cat}>
                     <div className="cat-bar-head">
                       <span>{cat}</span>
@@ -287,6 +204,84 @@ export default function Dashboard({ year, navigate }) {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Fee position (2×2) */}
+        <div className="card col2 row2">
+          <div className="card-head">
+            <h3>Fee Position — {year}</h3>
+            <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'balance' })}>Balance sheet</button>
+          </div>
+          <div className="card-body">
+            {['I PUC', 'II PUC'].map((cls) => {
+              const actual = Number(cls === 'I PUC' ? sheet.iPucActual : sheet.iiPucActual);
+              const received = Number(cls === 'I PUC' ? sheet.iPucReceived : sheet.iiPucReceived);
+              const pct = actual > 0 ? Math.min(100, (received / actual) * 100) : 0;
+              return (
+                <div key={cls} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 600 }}>
+                    <span>{cls}</span>
+                    <span>₹ {formatINR(received)} / ₹ {formatINR(actual)}</span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+            <div className="fee-figures">
+              <div>
+                <div className="k">Assigned</div>
+                <div className="v">₹ {formatINR(totalActual)}</div>
+              </div>
+              <div>
+                <div className="k">Received</div>
+                <div className="v">₹ {formatINR(totalReceived)}</div>
+              </div>
+              <div>
+                <div className="k">Deficit</div>
+                <div className={`v ${figClass(collectionStatus(totalReceived, totalActual))}`}>₹ {formatINR(annualDeficit)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recently added students (2×2) */}
+        <div className="card col2 row2">
+          <div className="card-head">
+            <h3>Recently Added Students</h3>
+            <button className="btn ghost small" onClick={() => navigate('students')}>View all</button>
+          </div>
+          <div className="card-body flush">
+            {recentStudents.length === 0 ? (
+              <div className="empty-state">
+                <span className="icon"><StudentsIcon /></span>
+                <strong>No students yet</strong>
+                <p>Admit students for {year} from the Students page.</p>
+              </div>
+            ) : (
+              <table>
+                <tbody>
+                  {recentStudents.map((s) => (
+                    <tr key={s.id} className="clickable" onClick={() => navigate('studentProfile', { id: s.id })}>
+                      <td>
+                        <div className="person-cell">
+                          <Avatar name={s.name} photo={s.photo} size={34} />
+                          <div>
+                            <div className="cell-strong">{s.name}</div>
+                            <div className="meta">{s.admissionNo || 'No admission no.'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <span className="badge">{s.className}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
