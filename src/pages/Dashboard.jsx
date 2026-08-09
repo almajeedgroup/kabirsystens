@@ -133,7 +133,7 @@ export default function Dashboard({ year, navigate }) {
         <div className="card-body">
           <LineChart
             labels={MONTHS.map((_, mi) => monthLabel(year, mi))}
-            series={[{ name: 'Expenses', color: '#7c3aed', values: monthTotals }]}
+            series={[{ name: 'Expenses', color: '#4f46e5', values: monthTotals }]}
           />
         </div>
       </div>

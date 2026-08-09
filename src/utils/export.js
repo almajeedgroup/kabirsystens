@@ -76,14 +76,14 @@ export function exportWord(filename, docTitle, sections) {
 <head><meta charset="utf-8"><title>${docTitle}</title>
 <style>
   body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; }
-  .letterhead { text-align: center; border-bottom: 3px solid #3A6EA5; padding-bottom: 12px; margin-bottom: 8px; }
-  .letterhead h1 { color: #3A6EA5; margin: 0; font-size: 22pt; }
+  .letterhead { text-align: center; border-bottom: 3px solid #4F46E5; padding-bottom: 12px; margin-bottom: 8px; }
+  .letterhead h1 { color: #4F46E5; margin: 0; font-size: 22pt; }
   .letterhead .unit { color: #000; font-size: 10pt; margin: 2px 0; }
-  .letterhead .sub { background: #DAA520; color: #000; display: inline-block; padding: 2px 14px; font-size: 11pt; font-weight: bold; }
+  .letterhead .sub { background: #06B6D4; color: #000; display: inline-block; padding: 2px 14px; font-size: 11pt; font-weight: bold; }
   .letterhead .contact { color: #000; font-size: 8.5pt; margin-top: 4px; }
-  h2 { color: #3A6EA5; font-size: 14pt; border-left: 6px solid #DAA520; padding-left: 8px; }
+  h2 { color: #4F46E5; font-size: 14pt; border-left: 6px solid #06B6D4; padding-left: 8px; }
   table { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
-  th { background: #3A6EA5; color: #fff; padding: 6px 8px; border: 1px solid #000; font-size: 10pt; }
+  th { background: #4F46E5; color: #fff; padding: 6px 8px; border: 1px solid #000; font-size: 10pt; }
   td { padding: 5px 8px; border: 1px solid #000; font-size: 10pt; }
   .footer { margin-top: 24px; font-size: 8pt; text-align: center; color: #000; }
 </style></head>

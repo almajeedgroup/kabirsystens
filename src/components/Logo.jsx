@@ -1,7 +1,7 @@
 // Emblem inspired by the college crest: laurel wreath around a torch monogram.
 export default function Logo({ size = 48, dark = false }) {
-  const ring = dark ? '#FFFFFF' : '#1B2A5E';
-  const flame = '#DAA520';
+  const ring = dark ? '#FFFFFF' : '#1E2140';
+  const flame = dark ? '#67E8F9' : '#06B6D4';
   return (
     <svg
       width={size}

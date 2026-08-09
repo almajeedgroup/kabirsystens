@@ -166,7 +166,7 @@ export default function App() {
           {settings.logo ? (
             <img src={settings.logo} alt="" />
           ) : (
-            <Logo size={38} />
+            <Logo size={38} dark />
           )}
           <span>{collegeName}</span>
         </button>

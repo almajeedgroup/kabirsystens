@@ -45,12 +45,15 @@ are created automatically.
 The **Academic Year** selector in the top bar switches every module between
 years (June through May, e.g. 2025-26).
 
-## Design
+## Design — "Indigo & Sky"
 
-- **Primary colour:** Azure blue `#3A6EA5` (midpoint between light blue and navy)
-- **Secondary colour:** Goldenrod `#DAA520`
-- **Text:** black and white only
-- Hairline borders and transparent (outline) buttons throughout
+- **Primary:** Indigo `#4F46E5`
+- **Accent:** Sky / cyan `#06B6D4`
+- **Deep:** `#1E2140` · **Canvas:** cool slate `#EEF1F8` · **Ink:** `#1B1E34`
+- **Type:** Inter throughout
+- Dashboard layout: no sidebar, top pill navigation, gradient KPI cards,
+  rounded white panels, a smooth line chart, and pill badges. Finance figures
+  stay traffic-light green/amber/red so status reads at a glance.
 
 ## Running
 
