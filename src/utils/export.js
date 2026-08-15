@@ -1,5 +1,12 @@
+import {
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+  WidthType, AlignmentType, BorderStyle, HeadingLevel, ShadingType,
+} from 'docx';
 import { COLLEGE } from '../constants.js';
 import { getSettings } from '../store.js';
+
+const INDIGO = '4F46E5';
+const CYAN = '06B6D4';
 
 // Ordinary browser download for a Blob — used on a real deployed site or
 // localhost. Robust across browsers:
@@ -67,8 +74,9 @@ function claudeRuntime() {
 
 // When the preview's file-type allowlist rejects an extension, fall back to a
 // permitted one that carries the same bytes. CSV is plain text, so `.txt`
-// preserves it perfectly; the JSON backup is already an allowed type.
-const SAFE_EXT = { csv: 'txt', doc: 'txt', html: 'txt', htm: 'txt' };
+// preserves it perfectly. Binary formats (.docx) are NOT remapped — a .docx
+// renamed to .txt would just be unreadable, so it falls through instead.
+const SAFE_EXT = { csv: 'txt' };
 function safeName(filename) {
   const dot = filename.lastIndexOf('.');
   if (dot < 0) return filename;
@@ -119,50 +127,80 @@ export function exportCSV(filename, rows) {
   download(filename, new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
 }
 
-// sections: [{ title, rows }] where rows[0] is the header row.
-export function exportWord(filename, docTitle, sections) {
-  const tableHTML = (rows) => {
-    const [head, ...body] = rows;
-    const th = head.map((h) => `<th>${h}</th>`).join('');
-    const trs = body
-      .map((r) => `<tr>${r.map((c) => `<td>${c ?? ''}</td>`).join('')}</tr>`)
-      .join('');
-    return `<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
-  };
+// Build one docx table from a matrix whose first row is the header.
+function docxTable(rows) {
+  const [head, ...body] = rows;
+  const border = { style: BorderStyle.SINGLE, size: 4, color: '999999' };
+  const borders = { top: border, bottom: border, left: border, right: border };
 
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: head.map((h) => new TableCell({
+      shading: { type: ShadingType.CLEAR, fill: INDIGO, color: 'auto' },
+      margins: { top: 40, bottom: 40, left: 80, right: 80 },
+      children: [new Paragraph({
+        children: [new TextRun({ text: String(h ?? ''), bold: true, color: 'FFFFFF', size: 18 })],
+      })],
+    })),
+  });
+
+  const bodyRows = body.map((r, ri) => new TableRow({
+    children: head.map((_, ci) => new TableCell({
+      shading: ri % 2 ? { type: ShadingType.CLEAR, fill: 'F3F4FB', color: 'auto' } : undefined,
+      margins: { top: 30, bottom: 30, left: 80, right: 80 },
+      children: [new Paragraph({
+        children: [new TextRun({ text: String(r[ci] ?? ''), size: 18 })],
+      })],
+    })),
+  }));
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders,
+    rows: [headerRow, ...bodyRows],
+  });
+}
+
+// sections: [{ title, rows }] where rows[0] is the header row.
+// Produces a genuine .docx that opens cleanly in Word, Pages and Google Docs.
+export function exportWord(filename, docTitle, sections) {
   const s = getSettings();
   const name = (s.collegeName || COLLEGE.name).toUpperCase();
   const unit = (s.unit || COLLEGE.unit).toUpperCase();
   const contact = [s.address, s.phone, s.email].filter(Boolean).join('  ·  ');
+  const centred = (children) => new Paragraph({ alignment: AlignmentType.CENTER, children });
 
-  const html = `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-<head><meta charset="utf-8"><title>${docTitle}</title>
-<style>
-  body { font-family: 'Segoe UI', Arial, sans-serif; color: #000; }
-  .letterhead { text-align: center; border-bottom: 3px solid #4F46E5; padding-bottom: 12px; margin-bottom: 8px; }
-  .letterhead h1 { color: #4F46E5; margin: 0; font-size: 22pt; }
-  .letterhead .unit { color: #000; font-size: 10pt; margin: 2px 0; }
-  .letterhead .sub { background: #06B6D4; color: #000; display: inline-block; padding: 2px 14px; font-size: 11pt; font-weight: bold; }
-  .letterhead .contact { color: #000; font-size: 8.5pt; margin-top: 4px; }
-  h2 { color: #4F46E5; font-size: 14pt; border-left: 6px solid #06B6D4; padding-left: 8px; }
-  table { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
-  th { background: #4F46E5; color: #fff; padding: 6px 8px; border: 1px solid #000; font-size: 10pt; }
-  td { padding: 5px 8px; border: 1px solid #000; font-size: 10pt; }
-  .footer { margin-top: 24px; font-size: 8pt; text-align: center; color: #000; }
-</style></head>
-<body>
-  <div class="letterhead">
-    <h1>${name}</h1>
-    <div class="sub">FOR WOMEN</div>
-    <div class="unit">${unit}</div>
-    ${contact ? `<div class="contact">${contact}</div>` : ''}
-  </div>
-  <h2>${docTitle}</h2>
-  <p>Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-  ${sections.map((sec) => `${sec.title ? `<h2>${sec.title}</h2>` : ''}${tableHTML(sec.rows)}`).join('')}
-  <div class="footer">Software by ${COLLEGE.developer}</div>
-</body></html>`;
+  const head = [
+    centred([new TextRun({ text: name, bold: true, color: INDIGO, size: 40 })]),
+    centred([new TextRun({ text: 'FOR WOMEN', bold: true, color: CYAN, size: 20 })]),
+    centred([new TextRun({ text: unit, size: 18 })]),
+    ...(contact ? [centred([new TextRun({ text: contact, size: 15, color: '555555' })])] : []),
+    new Paragraph({
+      border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: INDIGO, space: 6 } },
+      children: [],
+    }),
+    new Paragraph({ spacing: { before: 160 }, heading: HeadingLevel.HEADING_1,
+      children: [new TextRun({ text: docTitle, bold: true, color: INDIGO, size: 30 })] }),
+    new Paragraph({ children: [new TextRun({
+      text: `Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+      italics: true, size: 16, color: '666666' })] }),
+  ];
 
-  download(filename, new Blob([html], { type: 'application/msword' }));
+  const bodyBlocks = sections.flatMap((sec) => [
+    ...(sec.title ? [new Paragraph({ spacing: { before: 220, after: 60 }, heading: HeadingLevel.HEADING_2,
+      children: [new TextRun({ text: sec.title, bold: true, color: INDIGO, size: 24 })] })] : []),
+    docxTable(sec.rows),
+    new Paragraph({ children: [] }),
+  ]);
+
+  const foot = [new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 240 },
+    children: [new TextRun({ text: `Software by ${COLLEGE.developer}`, size: 14, color: '999999' })] })];
+
+  const doc = new Document({
+    creator: COLLEGE.developer,
+    title: docTitle,
+    sections: [{ children: [...head, ...bodyBlocks, ...foot] }],
+  });
+
+  Packer.toBlob(doc).then((blob) => download(filename, blob));
 }

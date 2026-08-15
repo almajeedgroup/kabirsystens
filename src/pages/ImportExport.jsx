@@ -248,7 +248,7 @@ export default function ImportExport({ year }) {
       desc: 'Every student admitted for the year, with contact and fee details.',
       csv: () => exportCSV(`students-${year}.csv`, studentRows(students, year)),
       word: () =>
-        exportWord(`students-${year}.doc`, `Student Register ${year}`, [
+        exportWord(`students-${year}.docx`, `Student Register ${year}`, [
           { rows: studentRows(students, year) },
         ]),
     },
@@ -258,7 +258,7 @@ export default function ImportExport({ year }) {
       desc: 'The full fee register: actual/agreed/deficit, admission payment and all three instalments with dates, receipts and payment modes, grand total, due and remarks.',
       csv: () => exportCSV(`fee-register-${year}.csv`, feeRegisterRows(students, year)),
       word: () =>
-        exportWord(`fee-register-${year}.doc`, `Fee Register ${year}`, [
+        exportWord(`fee-register-${year}.docx`, `Fee Register ${year}`, [
           { rows: feeRegisterRows(students, year) },
         ]),
     },
@@ -267,7 +267,7 @@ export default function ImportExport({ year }) {
       title: 'Teachers & Staff Register',
       desc: 'All members with designation, subject, qualification and salary.',
       csv: () => exportCSV('teachers-staff.csv', staffRows(staff)),
-      word: () => exportWord('teachers-staff.doc', 'Teachers & Staff Register', [{ rows: staffRows(staff) }]),
+      word: () => exportWord('teachers-staff.docx', 'Teachers & Staff Register', [{ rows: staffRows(staff) }]),
     },
     {
       icon: WalletIcon,
@@ -275,7 +275,7 @@ export default function ImportExport({ year }) {
       desc: 'Category-wise expenses for every month, including custom categories.',
       csv: () => exportCSV(`expenses-${year}.csv`, expenseRows(expenses, categories, year)),
       word: () =>
-        exportWord(`expenses-${year}.doc`, `Monthly Expenses ${year}`, [
+        exportWord(`expenses-${year}.docx`, `Monthly Expenses ${year}`, [
           { rows: expenseRows(expenses, categories, year) },
         ]),
     },
@@ -285,7 +285,7 @@ export default function ImportExport({ year }) {
       desc: 'I PUC / II PUC actual, received and deficit, with annual expenses.',
       csv: () => exportCSV(`balance-sheet-${year}.csv`, balanceRows(sheet, expensesTotal)),
       word: () =>
-        exportWord(`balance-sheet-${year}.doc`, `Balance Sheet ${year}`, [
+        exportWord(`balance-sheet-${year}.docx`, `Balance Sheet ${year}`, [
           { rows: balanceRows(sheet, expensesTotal) },
         ]),
     },
@@ -294,7 +294,7 @@ export default function ImportExport({ year }) {
       title: `Complete Annual Report — ${year}`,
       desc: 'One Word document: balance sheet, expenses, students, teachers & staff.',
       word: () =>
-        exportWord(`annual-report-${year}.doc`, `Annual Report ${year}`, [
+        exportWord(`annual-report-${year}.docx`, `Annual Report ${year}`, [
           { title: 'Balance Sheet', rows: balanceRows(sheet, expensesTotal) },
           { title: 'Monthly Expenses', rows: expenseRows(expenses, categories, year) },
           { title: 'Fee Register', rows: feeRegisterRows(students, year) },
