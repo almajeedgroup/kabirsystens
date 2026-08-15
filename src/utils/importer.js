@@ -1,10 +1,37 @@
 import * as XLSX from 'xlsx';
+import { parseCSV } from './csv.js';
 
 // Excel / CSV importer with explicit column mapping.
 // Reads a spreadsheet into { headers, rows }, suggests which source column
 // feeds each app attribute, and lets the caller map/override before saving.
 
+// From a raw matrix of cells, split off the header row and the data rows.
+// The header is the first row with 2+ non-empty cells.
+function splitMatrix(matrix) {
+  let headerIdx = matrix.findIndex((r) => r.filter((c) => String(c).trim() !== '').length >= 2);
+  if (headerIdx < 0) headerIdx = 0;
+  const headers = (matrix[headerIdx] || []).map((h) => String(h).trim());
+  const rows = matrix.slice(headerIdx + 1).filter((r) => r.some((c) => String(c).trim() !== ''));
+  return { headers, rows };
+}
+
 export function parseFile(file) {
+  const isCSV = /\.csv$/i.test(file.name || '') || file.type === 'text/csv';
+
+  // CSV: parse as plain text so values stay exactly as typed. SheetJS would
+  // otherwise coerce things like an admission no. "2026/001" into a date
+  // serial ("46023"); a text parser keeps every cell verbatim.
+  if (isCSV) {
+    return file
+      .text()
+      .then((text) => splitMatrix(parseCSV(text)))
+      .catch(() => {
+        throw new Error('This file could not be read as a CSV.');
+      });
+  }
+
+  // Excel: read the binary workbook. raw:false formats dates/numbers to their
+  // displayed text rather than internal serials.
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Could not read the file.'));
@@ -12,13 +39,10 @@ export function parseFile(file) {
       try {
         const wb = XLSX.read(reader.result, { type: 'array' });
         const sheet = wb.Sheets[wb.SheetNames[0]];
-        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, defval: '' });
-        // Find the header row: first row with 2+ non-empty cells.
-        let headerIdx = matrix.findIndex((r) => r.filter((c) => String(c).trim() !== '').length >= 2);
-        if (headerIdx < 0) headerIdx = 0;
-        const headers = (matrix[headerIdx] || []).map((h) => String(h).trim());
-        const rows = matrix.slice(headerIdx + 1).filter((r) => r.some((c) => String(c).trim() !== ''));
-        resolve({ headers, rows });
+        const matrix = XLSX.utils.sheet_to_json(sheet, {
+          header: 1, blankrows: false, defval: '', raw: false,
+        });
+        resolve(splitMatrix(matrix));
       } catch {
         reject(new Error('This file could not be read as a spreadsheet.'));
       }
@@ -88,21 +112,41 @@ export const FIELD_SETS = {
 export const TYPE_LABELS = { students: 'Students', staff: 'Teachers & Staff' };
 
 // Best-guess a source column index for each field (−1 = unmapped).
+// Exact header matches always win over partial ones, and each source column is
+// claimed by at most one field — so labels like "Name" and "Guardian Name",
+// where one contains the other, no longer collide.
 export function guessMapping(type, headers) {
   const normHeaders = headers.map(norm);
+  const used = new Set();
   const mapping = {};
+
+  const scoreHeader = (h, field) => {
+    const cands = [
+      norm(field.label),
+      norm(field.key.replace('.', '')),
+      ...(field.aliases || []).map(norm),
+    ].filter(Boolean);
+    let best = 0;
+    for (const c of cands) {
+      if (h === c) best = Math.max(best, 1000); // exact match dominates
+      else if (h.includes(c) || c.includes(h)) best = Math.max(best, Math.min(c.length, h.length));
+    }
+    return best;
+  };
+
   for (const field of FIELD_SETS[type]) {
-    const candidates = [norm(field.label), norm(field.key.replace('.', '')), ...(field.aliases || []).map(norm)];
-    let found = -1;
+    let bestI = -1;
+    let bestScore = 0;
     for (let i = 0; i < normHeaders.length; i++) {
-      const h = normHeaders[i];
-      if (!h) continue;
-      if (candidates.some((c) => c && (h === c || h.includes(c) || c.includes(h)))) {
-        found = i;
-        break;
+      if (!normHeaders[i] || used.has(i)) continue;
+      const s = scoreHeader(normHeaders[i], field);
+      if (s > bestScore) {
+        bestScore = s;
+        bestI = i;
       }
     }
-    mapping[field.key] = found;
+    mapping[field.key] = bestI;
+    if (bestI >= 0) used.add(bestI);
   }
   return mapping;
 }
