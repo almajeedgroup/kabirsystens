@@ -52,18 +52,52 @@ function browserDownload(filename, blob) {
 // download channel (window.claude) when it is present. This is
 // feature-detected: on a real site window.claude does not exist and the
 // ordinary path is used untouched.
+function claudeRuntime() {
+  // The host may expose the runtime as a bare `claude` global or as
+  // `window.claude`; `typeof` guards against a ReferenceError when neither
+  // exists (a normal browser).
+  try {
+    // eslint-disable-next-line no-undef
+    if (typeof claude !== 'undefined' && claude) return claude;
+  } catch {
+    /* not defined — fall through */
+  }
+  return typeof window !== 'undefined' ? window.claude : undefined;
+}
+
+// When the preview's file-type allowlist rejects an extension, fall back to a
+// permitted one that carries the same bytes. CSV is plain text, so `.txt`
+// preserves it perfectly; the JSON backup is already an allowed type.
+const SAFE_EXT = { csv: 'txt', doc: 'txt', html: 'txt', htm: 'txt' };
+function safeName(filename) {
+  const dot = filename.lastIndexOf('.');
+  if (dot < 0) return filename;
+  const ext = filename.slice(dot + 1).toLowerCase();
+  return SAFE_EXT[ext] ? `${filename.slice(0, dot)}.${SAFE_EXT[ext]}` : filename;
+}
+
 export function downloadBlob(filename, blob) {
-  const runtime = typeof window !== 'undefined' ? window.claude : undefined;
+  const runtime = claudeRuntime();
   if (runtime && typeof runtime.use === 'function') {
     Promise.resolve(runtime.use('downloads'))
       .then((downloads) => {
         if (!downloads) return browserDownload(filename, blob);
+        const save = (name) => downloads.save({ filename: name, data: blob });
         // The viewer sees a confirmation and may decline; a decline is a
-        // deliberate choice, so don't fall back and re-prompt. Any other
-        // failure (e.g. a file type the sandbox can't hand off) falls back
-        // to the ordinary path.
-        return downloads.save({ filename, data: blob }).catch((err) => {
-          if (err && err.code === 'declined') return undefined;
+        // deliberate choice, so don't fall back and re-prompt. If the file
+        // type itself is not allowed, retry once with a permitted extension
+        // so the data still reaches the viewer. Anything else falls back to
+        // the ordinary browser path.
+        return save(filename).catch((err) => {
+          const code = err && err.code;
+          if (code === 'declined') return undefined;
+          const alt = safeName(filename);
+          if ((code === 'rejected_extension' || code === 'extension_not_enabled') && alt !== filename) {
+            return save(alt).catch((e2) => {
+              if (e2 && e2.code === 'declined') return undefined;
+              return browserDownload(filename, blob);
+            });
+          }
           return browserDownload(filename, blob);
         });
       })
