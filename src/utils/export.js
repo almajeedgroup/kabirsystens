@@ -1,12 +1,13 @@
 import { COLLEGE } from '../constants.js';
 import { getSettings } from '../store.js';
 
-// Trigger a file download for a Blob. Robust across browsers:
+// Ordinary browser download for a Blob — used on a real deployed site or
+// localhost. Robust across browsers:
 //  - revokes the object URL on a delay (revoking immediately cancels the
 //    download in Chromium/WebKit — this was the "nothing downloads" bug);
 //  - falls back to opening the content in a new tab when the anchor's
-//    download attribute is unsupported or blocked (e.g. sandboxed frames).
-export function downloadBlob(filename, blob) {
+//    download attribute is unsupported or blocked.
+function browserDownload(filename, blob) {
   const url = URL.createObjectURL(blob);
   const cleanup = () => setTimeout(() => URL.revokeObjectURL(url), 15000);
 
@@ -41,6 +42,35 @@ export function downloadBlob(filename, blob) {
   }
   a.remove();
   cleanup();
+}
+
+// Trigger a file download for a Blob.
+//
+// On a normal deployment this is just an anchor download. When the app is
+// running inside the Claude Artifact preview, the frame is sandboxed and
+// cannot start a browser download at all, so we route through the runtime's
+// download channel (window.claude) when it is present. This is
+// feature-detected: on a real site window.claude does not exist and the
+// ordinary path is used untouched.
+export function downloadBlob(filename, blob) {
+  const runtime = typeof window !== 'undefined' ? window.claude : undefined;
+  if (runtime && typeof runtime.use === 'function') {
+    Promise.resolve(runtime.use('downloads'))
+      .then((downloads) => {
+        if (!downloads) return browserDownload(filename, blob);
+        // The viewer sees a confirmation and may decline; a decline is a
+        // deliberate choice, so don't fall back and re-prompt. Any other
+        // failure (e.g. a file type the sandbox can't hand off) falls back
+        // to the ordinary path.
+        return downloads.save({ filename, data: blob }).catch((err) => {
+          if (err && err.code === 'declined') return undefined;
+          return browserDownload(filename, blob);
+        });
+      })
+      .catch(() => browserDownload(filename, blob));
+    return;
+  }
+  browserDownload(filename, blob);
 }
 
 const download = downloadBlob;
