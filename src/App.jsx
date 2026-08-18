@@ -244,6 +244,9 @@ export default function App() {
 
         <main className="content">
           <div className="print-letterhead">
+            <span className="print-logo">
+              {settings.logo ? <img src={settings.logo} alt="" /> : <Logo size={64} />}
+            </span>
             <h2 style={{ margin: 0 }}>{collegeName.toUpperCase()}</h2>
             <div>{collegeUnit.toUpperCase()}</div>
           </div>

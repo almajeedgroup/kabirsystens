@@ -1,9 +1,20 @@
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-  WidthType, AlignmentType, BorderStyle, HeadingLevel, ShadingType,
+  WidthType, AlignmentType, BorderStyle, HeadingLevel, ShadingType, ImageRun,
 } from 'docx';
 import { COLLEGE } from '../constants.js';
 import { getSettings } from '../store.js';
+import { logoToPng } from '../assets/collegeLogo.js';
+
+// Decode a "data:...;base64,xxxx" URL into raw bytes for docx image embedding.
+function dataUrlToBytes(dataUrl) {
+  const comma = dataUrl.indexOf(',');
+  const b64 = dataUrl.slice(comma + 1);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
 
 const INDIGO = '4F46E5';
 const CYAN = '06B6D4';
@@ -163,14 +174,34 @@ function docxTable(rows) {
 
 // sections: [{ title, rows }] where rows[0] is the header row.
 // Produces a genuine .docx that opens cleanly in Word, Pages and Google Docs.
-export function exportWord(filename, docTitle, sections) {
+export async function exportWord(filename, docTitle, sections) {
   const s = getSettings();
   const name = (s.collegeName || COLLEGE.name).toUpperCase();
   const unit = (s.unit || COLLEGE.unit).toUpperCase();
   const contact = [s.address, s.phone, s.email].filter(Boolean).join('  ·  ');
   const centred = (children) => new Paragraph({ alignment: AlignmentType.CENTER, children });
 
+  // Letterhead logo: the uploaded college logo if there is one, otherwise the
+  // built-in crest. Rendered to PNG so it embeds in the document.
+  let logoPara = null;
+  try {
+    const png = await logoToPng(320, s.logo || undefined);
+    if (png) {
+      logoPara = new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 40 },
+        children: [new ImageRun({
+          data: dataUrlToBytes(png),
+          transformation: { width: 84, height: 84 },
+        })],
+      });
+    }
+  } catch {
+    logoPara = null;
+  }
+
   const head = [
+    ...(logoPara ? [logoPara] : []),
     centred([new TextRun({ text: name, bold: true, color: INDIGO, size: 40 })]),
     centred([new TextRun({ text: 'FOR WOMEN', bold: true, color: CYAN, size: 20 })]),
     centred([new TextRun({ text: unit, size: 18 })]),
@@ -202,5 +233,6 @@ export function exportWord(filename, docTitle, sections) {
     sections: [{ children: [...head, ...bodyBlocks, ...foot] }],
   });
 
-  Packer.toBlob(doc).then((blob) => download(filename, blob));
+  const blob = await Packer.toBlob(doc);
+  download(filename, blob);
 }

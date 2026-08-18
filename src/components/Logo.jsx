@@ -1,50 +1,25 @@
-// Emblem inspired by the college crest: laurel wreath around a torch monogram.
+import { collegeLogoSvg } from '../assets/collegeLogo.js';
+
+// Renders the college crest. On a dark background (`dark`), the navy crest is
+// placed on a light disc so it stays legible.
 export default function Logo({ size = 48, dark = false }) {
-  const ring = dark ? '#FFFFFF' : '#1E2140';
-  const flame = dark ? '#67E8F9' : '#06B6D4';
+  const pad = dark ? Math.round(size * 0.12) : 0;
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 100 100"
-      role="img"
-      aria-label="Kabir Ind PU College emblem"
-    >
-      {/* laurel wreath */}
-      <g stroke={ring} strokeWidth="3" fill="none" strokeLinecap="round">
-        <path d="M25 78 C12 62, 12 38, 25 22" />
-        <path d="M75 78 C88 62, 88 38, 75 22" />
-      </g>
-      <g fill={ring}>
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <ellipse
-            key={`l${i}`}
-            cx={20 - i * 0.8}
-            cy={70 - i * 9}
-            rx="4.5"
-            ry="2.2"
-            transform={`rotate(${-40 + i * 10} ${20 - i * 0.8} ${70 - i * 9})`}
-          />
-        ))}
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <ellipse
-            key={`r${i}`}
-            cx={80 + i * 0.8}
-            cy={70 - i * 9}
-            rx="4.5"
-            ry="2.2"
-            transform={`rotate(${40 - i * 10} ${80 + i * 0.8} ${70 - i * 9})`}
-          />
-        ))}
-      </g>
-      {/* torch */}
-      <path
-        d="M50 20 C46 26, 45 30, 50 35 C55 30, 54 26, 50 20 Z"
-        fill={flame}
-      />
-      <rect x="47.5" y="37" width="5" height="26" rx="2" fill={flame} />
-      {/* monogram strokes */}
-      <path d="M42 40 L42 62 M42 50 L56 38 M44 52 L58 64" stroke={dark ? '#FFFFFF' : '#8A8FA3'} strokeWidth="4" strokeLinecap="round" fill="none" />
-    </svg>
+    <span
+      className="college-logo"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: size,
+        height: size,
+        padding: pad,
+        borderRadius: dark ? '50%' : 0,
+        background: dark ? '#FFFFFF' : 'transparent',
+        boxSizing: 'border-box',
+      }}
+      // The crest is a trusted, self-authored constant SVG string.
+      dangerouslySetInnerHTML={{ __html: collegeLogoSvg() }}
+    />
   );
 }

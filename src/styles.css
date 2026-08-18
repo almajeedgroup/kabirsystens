@@ -795,6 +795,8 @@ input[type='file'] { padding: 8px; font-size: 0.78rem; }
   .kpi-card { background: #fff !important; }
   .content { max-width: none; }
   .print-letterhead { display: block !important; text-align: center; border-bottom: 3px solid var(--violet); margin-bottom: 18px; padding-bottom: 12px; }
+  .print-logo { display: inline-flex; }
+  .print-logo img, .print-logo svg { width: 64px; height: 64px; object-fit: contain; }
 }
 .print-letterhead { display: none; }
 
