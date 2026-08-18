@@ -1,25 +1,15 @@
-import { collegeLogoSvg } from '../assets/collegeLogo.js';
+import { COLLEGE_LOGO } from '../assets/logo.js';
 
-// Renders the college crest. On a dark background (`dark`), the navy crest is
-// placed on a light disc so it stays legible.
-export default function Logo({ size = 48, dark = false }) {
-  const pad = dark ? Math.round(size * 0.12) : 0;
+// The college crest. `src` lets callers show an uploaded logo instead.
+export default function Logo({ size = 48, src }) {
   return (
-    <span
+    <img
       className="college-logo"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: size,
-        height: size,
-        padding: pad,
-        borderRadius: dark ? '50%' : 0,
-        background: dark ? '#FFFFFF' : 'transparent',
-        boxSizing: 'border-box',
-      }}
-      // The crest is a trusted, self-authored constant SVG string.
-      dangerouslySetInnerHTML={{ __html: collegeLogoSvg() }}
+      src={src || COLLEGE_LOGO}
+      alt="Kabir Ind PU College crest"
+      width={size}
+      height={size}
+      style={{ width: size, height: size, objectFit: 'contain' }}
     />
   );
 }

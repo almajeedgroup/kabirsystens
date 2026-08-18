@@ -22,38 +22,14 @@ import Finance from './pages/Finance.jsx';
 import Settings from './pages/Settings.jsx';
 
 const NAV = [
-  {
-    title: 'Overview',
-    items: [{ id: 'dashboard', label: 'Dashboard', icon: HomeIcon }],
-  },
-  {
-    title: 'People',
-    items: [
-      { id: 'students', label: 'Students', icon: StudentsIcon },
-      { id: 'teachers', label: 'Teachers & Staff', icon: TeachersIcon },
-    ],
-  },
-  {
-    title: 'Finance',
-    items: [{ id: 'finance', label: 'Finance', icon: WalletIcon }],
-  },
-  {
-    title: 'System',
-    items: [{ id: 'settings', label: 'Settings', icon: SettingsIcon }],
-  },
+  { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
+  { id: 'students', label: 'Students', icon: StudentsIcon },
+  { id: 'teachers', label: 'Teachers & Staff', icon: TeachersIcon },
+  { id: 'finance', label: 'Finance', icon: WalletIcon },
+  { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
-const TITLES = {
-  dashboard: 'Dashboard',
-  students: 'Students',
-  studentProfile: 'Student Profile',
-  teachers: 'Teachers & Staff',
-  teacherProfile: 'Teacher Profile',
-  finance: 'Finance',
-  settings: 'Settings',
-};
-
-// Profile pages highlight their parent list in the nav.
+// Profile pages highlight their parent entry in the nav.
 const NAV_PARENT = { studentProfile: 'students', teacherProfile: 'teachers' };
 
 export default function App() {
@@ -61,6 +37,7 @@ export default function App() {
   const [year, setYear] = useState(currentAcademicYear());
   // Auth phase (Firebase mode only): 'loading' | 'out' | 'in'.
   const [authPhase, setAuthPhase] = useState(firebaseAvailable ? 'loading' : 'in');
+  const [query, setQuery] = useState('');
   const toast = useToast();
 
   useSyncExternalStore(subscribe, getData);
@@ -93,9 +70,6 @@ export default function App() {
     });
   }, [toast]);
 
-  // Global search across students and teachers.
-  const [query, setQuery] = useState('');
-
   const signOut = async () => {
     await signOutUser();
     setView({ page: 'dashboard' });
@@ -121,23 +95,24 @@ export default function App() {
       ]
     : [];
 
+  const settings = getSettings();
+  const collegeName = settings.collegeName || COLLEGE.name;
+  const collegeUnit = settings.unit || COLLEGE.unit;
+
   if (authPhase === 'loading') {
     return (
       <div className="login-screen">
         <div className="login-card" style={{ textAlign: 'center' }}>
-          <Logo size={56} />
+          <Logo size={72} src={settings.logo || undefined} />
           <p style={{ marginTop: 16, color: 'var(--ink-50)' }}>Loading…</p>
         </div>
       </div>
     );
   }
 
-  if (authPhase === 'out') {
-    return <Login />;
-  }
+  if (authPhase === 'out') return <Login />;
 
   const activeNav = NAV_PARENT[view.page] || view.page;
-
   const pageProps = { year, navigate, view };
   const PAGE = {
     dashboard: <Dashboard {...pageProps} />,
@@ -149,110 +124,107 @@ export default function App() {
     settings: <Settings {...pageProps} />,
   }[view.page];
 
-  const settings = getSettings();
-  const collegeName = settings.collegeName || COLLEGE.name;
-  const collegeUnit = settings.unit || COLLEGE.unit;
-
-  const navItems = NAV.flatMap((s) => s.items);
-
   return (
     <div className="app">
-      <aside className="rail no-print">
-        <button className="rail-brand" onClick={() => navigate('dashboard')} aria-label="Home" title={collegeName}>
-          {settings.logo ? (
-            <img src={settings.logo} alt="" />
-          ) : (
-            <Logo size={34} dark />
-          )}
-        </button>
-        <nav className="rail-nav" aria-label="Main navigation">
-          {navItems.map(({ id, label, icon: NavIcon }) => (
-            <button
-              key={id}
-              className={`rail-item${id === activeNav ? ' active' : ''}`}
-              onClick={() => navigate(id)}
-              aria-current={id === activeNav ? 'page' : undefined}
-            >
-              <NavIcon size={21} />
-              <span className="rail-label">{label}</span>
-            </button>
-          ))}
-        </nav>
-        {firebaseAvailable && (
-          <div className="rail-foot">
-            <button className="rail-item" onClick={signOut}>
-              <LogoutIcon size={21} />
-              <span className="rail-label">Sign out</span>
-            </button>
-          </div>
-        )}
-      </aside>
+      <header className="masthead no-print">
+        <div className="masthead-top">
+          <button className="brand" onClick={() => navigate('dashboard')} aria-label="Home">
+            <span className="brand-crest">
+              <Logo size={46} src={settings.logo || undefined} />
+            </span>
+            <span className="brand-text">
+              <span className="brand-name">{collegeName}</span>
+              <span className="brand-unit">{collegeUnit}</span>
+            </span>
+          </button>
 
-      <div className="main">
-        <header className="topbar">
-          <div className="topbar-search">
-            <SearchIcon size={18} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search students or staff…"
-              aria-label="Global search"
-            />
-            {!query && <span className="kbd">⌘ /</span>}
-            {query && (
-              <div className="gs-results">
-                {results.length === 0 ? (
-                  <div className="gs-empty">No matches for “{query}”.</div>
-                ) : (
-                  results.map((r) => (
-                    <button
-                      key={`${r.type}-${r.id}`}
-                      className="gs-item"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() =>
-                        navigate(r.type === 'student' ? 'studentProfile' : 'teacherProfile', { id: r.id })
-                      }
-                    >
-                      <Avatar name={r.name} photo={r.photo} size={30} />
-                      <span>
-                        <span className="cell-strong">{r.name}</span>
-                        <span className="meta"> · {r.meta}</span>
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+          <div className="masthead-tools">
+            <div className="search-box">
+              <SearchIcon size={17} />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search students or staff…"
+                aria-label="Global search"
+              />
+              {query && (
+                <div className="gs-results">
+                  {results.length === 0 ? (
+                    <div className="gs-empty">No matches for “{query}”.</div>
+                  ) : (
+                    results.map((r) => (
+                      <button
+                        key={`${r.type}-${r.id}`}
+                        className="gs-item"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() =>
+                          navigate(r.type === 'student' ? 'studentProfile' : 'teacherProfile', { id: r.id })
+                        }
+                      >
+                        <Avatar name={r.name} photo={r.photo} size={30} />
+                        <span>
+                          <span className="cell-strong">{r.name}</span>
+                          <span className="meta"> · {r.meta}</span>
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
 
-          <div className="topbar-right">
             <div className="year-picker">
               <CalendarIcon size={15} />
-              <label htmlFor="year-select">Academic Year</label>
+              <label htmlFor="year-select">Year</label>
               <select id="year-select" value={year} onChange={(e) => setYear(e.target.value)}>
                 {academicYearOptions().map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
             </div>
-            <button className="top-icon" onClick={() => navigate('finance', { tab: 'importexport' })} aria-label="Import & Export" title="Import & Export">
-              <DownloadIcon size={18} />
-            </button>
-            <span className="top-avatar"><Avatar name={collegeName} photo={settings.logo} size={42} /></span>
-          </div>
-        </header>
 
-        <main className="content">
-          <div className="print-letterhead">
-            <span className="print-logo">
-              {settings.logo ? <img src={settings.logo} alt="" /> : <Logo size={64} />}
-            </span>
-            <h2 style={{ margin: 0 }}>{collegeName.toUpperCase()}</h2>
-            <div>{collegeUnit.toUpperCase()}</div>
+            <button
+              className="top-icon"
+              onClick={() => navigate('finance', { tab: 'importexport' })}
+              aria-label="Import & Export"
+              title="Import & Export"
+            >
+              <DownloadIcon size={17} />
+            </button>
+
+            {firebaseAvailable && (
+              <button className="top-icon" onClick={signOut} aria-label="Sign out" title="Sign out">
+                <LogoutIcon size={17} />
+              </button>
+            )}
           </div>
-          {PAGE}
-        </main>
-      </div>
+        </div>
+
+        <nav className="mainnav" aria-label="Main navigation">
+          {NAV.map(({ id, label, icon: NavIcon }) => (
+            <button
+              key={id}
+              className={`navtab${id === activeNav ? ' active' : ''}`}
+              onClick={() => navigate(id)}
+              aria-current={id === activeNav ? 'page' : undefined}
+            >
+              <NavIcon size={17} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+      </header>
+
+      <main className="content">
+        <div className="print-letterhead">
+          <span className="print-logo">
+            <Logo size={68} src={settings.logo || undefined} />
+          </span>
+          <h2 style={{ margin: 0 }}>{collegeName.toUpperCase()}</h2>
+          <div>{collegeUnit.toUpperCase()}</div>
+        </div>
+        {PAGE}
+      </main>
     </div>
   );
 }

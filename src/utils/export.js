@@ -4,7 +4,7 @@ import {
 } from 'docx';
 import { COLLEGE } from '../constants.js';
 import { getSettings } from '../store.js';
-import { logoToPng } from '../assets/collegeLogo.js';
+import { logoToPng } from '../assets/logo.js';
 
 // Decode a "data:...;base64,xxxx" URL into raw bytes for docx image embedding.
 function dataUrlToBytes(dataUrl) {
@@ -16,8 +16,8 @@ function dataUrlToBytes(dataUrl) {
   return bytes;
 }
 
-const INDIGO = '4F46E5';
-const CYAN = '06B6D4';
+const NAVY = '17285B';
+const GOLD = 'C6A15B';
 
 // Ordinary browser download for a Blob — used on a real deployed site or
 // localhost. Robust across browsers:
@@ -147,7 +147,7 @@ function docxTable(rows) {
   const headerRow = new TableRow({
     tableHeader: true,
     children: head.map((h) => new TableCell({
-      shading: { type: ShadingType.CLEAR, fill: INDIGO, color: 'auto' },
+      shading: { type: ShadingType.CLEAR, fill: NAVY, color: 'auto' },
       margins: { top: 40, bottom: 40, left: 80, right: 80 },
       children: [new Paragraph({
         children: [new TextRun({ text: String(h ?? ''), bold: true, color: 'FFFFFF', size: 18 })],
@@ -157,7 +157,7 @@ function docxTable(rows) {
 
   const bodyRows = body.map((r, ri) => new TableRow({
     children: head.map((_, ci) => new TableCell({
-      shading: ri % 2 ? { type: ShadingType.CLEAR, fill: 'F3F4FB', color: 'auto' } : undefined,
+      shading: ri % 2 ? { type: ShadingType.CLEAR, fill: 'F2F4F9', color: 'auto' } : undefined,
       margins: { top: 30, bottom: 30, left: 80, right: 80 },
       children: [new Paragraph({
         children: [new TextRun({ text: String(r[ci] ?? ''), size: 18 })],
@@ -202,16 +202,16 @@ export async function exportWord(filename, docTitle, sections) {
 
   const head = [
     ...(logoPara ? [logoPara] : []),
-    centred([new TextRun({ text: name, bold: true, color: INDIGO, size: 40 })]),
-    centred([new TextRun({ text: 'FOR WOMEN', bold: true, color: CYAN, size: 20 })]),
+    centred([new TextRun({ text: name, bold: true, color: NAVY, size: 40 })]),
+    centred([new TextRun({ text: 'FOR WOMEN', bold: true, color: GOLD, size: 20 })]),
     centred([new TextRun({ text: unit, size: 18 })]),
     ...(contact ? [centred([new TextRun({ text: contact, size: 15, color: '555555' })])] : []),
     new Paragraph({
-      border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: INDIGO, space: 6 } },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: NAVY, space: 6 } },
       children: [],
     }),
     new Paragraph({ spacing: { before: 160 }, heading: HeadingLevel.HEADING_1,
-      children: [new TextRun({ text: docTitle, bold: true, color: INDIGO, size: 30 })] }),
+      children: [new TextRun({ text: docTitle, bold: true, color: NAVY, size: 30 })] }),
     new Paragraph({ children: [new TextRun({
       text: `Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`,
       italics: true, size: 16, color: '666666' })] }),
@@ -219,7 +219,7 @@ export async function exportWord(filename, docTitle, sections) {
 
   const bodyBlocks = sections.flatMap((sec) => [
     ...(sec.title ? [new Paragraph({ spacing: { before: 220, after: 60 }, heading: HeadingLevel.HEADING_2,
-      children: [new TextRun({ text: sec.title, bold: true, color: INDIGO, size: 24 })] })] : []),
+      children: [new TextRun({ text: sec.title, bold: true, color: NAVY, size: 24 })] })] : []),
     docxTable(sec.rows),
     new Paragraph({ children: [] }),
   ]);

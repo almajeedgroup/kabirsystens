@@ -1,4 +1,5 @@
-const PALETTE_INDEX = ['#4F46E5', '#3B82F6', '#06B6D4', '#6366F1', '#0EA5E9'];
+// Navy-and-gold tones drawn from the college crest.
+const PALETTE_INDEX = ['#17285B', '#2C4489', '#AC8845', '#3D5AA6', '#7A6230'];
 
 export default function Avatar({ name = '', photo, size = 40 }) {
   const initials = name

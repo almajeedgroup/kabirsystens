@@ -101,9 +101,23 @@ export default function Dashboard({ year, navigate }) {
         </div>
       </div>
 
-      <div className="bento">
-        {/* Highlight: expense trend (2×2) */}
-        <div className="card col2 row2">
+      {/* KPI tiles */}
+      <div className="dash-stats">
+        {kpis.map(({ icon: KpiIcon, tone, label, value, hint }) => (
+          <div className={`kpi-card ${tone}`} key={label}>
+            <span className="kpi-icon"><KpiIcon size={22} /></span>
+            <div>
+              <div className="kpi-label">{label}</div>
+              <div className="kpi-value">{value}</div>
+              <div className="kpi-hint">{hint}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="dash-main">
+        {/* Expense trend */}
+        <div className="card">
           <div className="card-head">
             <div>
               <h3>Expense Overview</h3>
@@ -122,25 +136,13 @@ export default function Dashboard({ year, navigate }) {
           <div className="card-body">
             <LineChart
               labels={MONTHS.map((_, mi) => monthLabel(year, mi))}
-              series={[{ name: 'Expenses', color: '#4f46e5', values: monthTotals }]}
+              series={[{ name: 'Expenses', color: '#17285b', values: monthTotals }]}
             />
           </div>
         </div>
 
-        {/* KPI tiles (1×1 each) */}
-        {kpis.map(({ icon: KpiIcon, tone, label, value, hint }) => (
-          <div className={`kpi-card ${tone}`} key={label}>
-            <span className="kpi-icon"><KpiIcon size={24} /></span>
-            <div>
-              <div className="kpi-label">{label}</div>
-              <div className="kpi-value">{value}</div>
-              <div className="kpi-hint">{hint}</div>
-            </div>
-          </div>
-        ))}
-
-        {/* Outstanding dues (2×2) */}
-        <div className="card col2 row2">
+        {/* Outstanding dues */}
+        <div className="card">
           <div className="card-head">
             <h3>Outstanding Dues — {year}</h3>
             <button className="btn ghost small" onClick={() => navigate('students')}>All students</button>
@@ -177,8 +179,11 @@ export default function Dashboard({ year, navigate }) {
           </div>
         </div>
 
-        {/* Expenses by category (2×2) */}
-        <div className="card col2 row2">
+      </div>
+
+      <div className="dash-split">
+        {/* Expenses by category */}
+        <div className="card">
           <div className="card-head">
             <h3>Expenses by Category — {year}</h3>
             <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'expenses' })}>Expense sheet</button>
@@ -208,8 +213,8 @@ export default function Dashboard({ year, navigate }) {
           </div>
         </div>
 
-        {/* Fee position (2×2) */}
-        <div className="card col2 row2">
+        {/* Fee position */}
+        <div className="card">
           <div className="card-head">
             <h3>Fee Position — {year}</h3>
             <button className="btn ghost small" onClick={() => navigate('finance', { tab: 'balance' })}>Balance sheet</button>
@@ -248,8 +253,10 @@ export default function Dashboard({ year, navigate }) {
           </div>
         </div>
 
-        {/* Recently added students (2×2) */}
-        <div className="card col2 row2">
+      </div>
+
+      {/* Recently added students */}
+      <div className="card">
           <div className="card-head">
             <h3>Recently Added Students</h3>
             <button className="btn ghost small" onClick={() => navigate('students')}>View all</button>
@@ -284,7 +291,6 @@ export default function Dashboard({ year, navigate }) {
               </table>
             )}
           </div>
-        </div>
       </div>
     </>
   );

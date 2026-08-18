@@ -28,15 +28,9 @@ export default function Login() {
     <div className="login-screen">
       <form className="login-card" onSubmit={submit}>
         <div className="login-brand">
-          {settings.logo ? (
-            <img src={settings.logo} alt="" style={{ width: 60, height: 60, objectFit: 'contain' }} />
-          ) : (
-            <Logo size={60} />
-          )}
-          <div>
-            <strong>{settings.collegeName || COLLEGE.name}</strong>
-            <small>{settings.unit || COLLEGE.unit}</small>
-          </div>
+          <Logo size={76} src={settings.logo || undefined} />
+          <h1>{settings.collegeName || COLLEGE.name}</h1>
+          <div className="login-sub">{settings.unit || COLLEGE.unit}</div>
         </div>
 
         <h1>Administrator Sign In</h1>
